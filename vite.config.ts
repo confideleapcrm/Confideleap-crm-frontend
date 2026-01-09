@@ -22,7 +22,7 @@ export default defineConfig({
     proxy: {
       // proxy all /api requests to backend running on 3001
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'https://devapi.confideleap.com',
         changeOrigin: true,
         secure: false,
         // rewrite: path => path.replace(/^\/api/, '/api') // not needed, we keep same path
