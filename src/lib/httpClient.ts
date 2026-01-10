@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const httpClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://devapi.confideleap.com",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "https://devapi.confideleap.com",
   withCredentials: true,
 });
 
