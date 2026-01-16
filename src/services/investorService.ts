@@ -67,6 +67,10 @@ export const getInvestorTargetingList = async (queryParams: any = {}) => {
   const queryString = params.toString();
   const url = `/api/investors/targeting/list${queryString ? `?${queryString}` : ""}`;
   const res = await httpClient.get(url);
+  console.log("Query Params:", params);
+  console.log("Final URL:", url);
+  console.log(res.data);
+  
   return res.data;
 };
 
@@ -157,22 +161,15 @@ export const createMeeting = async (payload: {
   location?: string | null;
   notes?: string | null;
 }) => {
-  const userId =
-    (window as any).currentUserId ||
-    localStorage.getItem("currentUserId") ||
-    null;
+  // 🔥 DO NOT attach userId – backend gets it from session
+  const clean = cleanPayloadKeepNulls(payload);
 
-  const body = { ...payload } as any;
-  if (userId) {
-    body.created_by = String(userId);
-  }
-
-  // clean undefined only (keep explicit nulls)
-  const clean = cleanPayloadKeepNulls(body);
   console.debug("SERVICE -> POST /api/meetings body:", clean);
+
   const res = await httpClient.post('/api/meetings', clean);
   return res.data;
 };
+
 
 export const updateMeeting = async (id: number | string, payload: any) => {
   const res = await httpClient.put(`/api/meetings/${id}`, payload);

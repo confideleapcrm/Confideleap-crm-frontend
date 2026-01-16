@@ -1,6 +1,6 @@
 // src/components/Login.tsx
 import React, { useState, useEffect } from "react";
-import { login, register } from "../services/authService";
+import { getMe, googleAuth, login, register } from "../services/authService";
 import {
   Mail,
   Lock,
@@ -27,18 +27,46 @@ import { useDispatch, useSelector } from "react-redux";
 import { setAuth } from "../store/slices/authSlice";
 import { RootState } from "../store/store";
 
+function GoogleIcon({ className }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 48 48"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.73 1.23 9.24 3.25l6.9-6.9C35.93 2.34 30.33 0 24 0 14.62 0 6.51 5.38 2.56 13.22l8.02 6.22C12.5 13.3 17.77 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.5 24.5c0-1.64-.15-3.21-.43-4.73H24v9.01h12.67c-.55 2.95-2.2 5.45-4.67 7.14l7.57 5.86c4.43-4.09 6.93-10.11 6.93-17.28z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.58 28.44a14.5 14.5 0 0 1 0-8.88l-8.02-6.22A23.99 23.99 0 0 0 0 24c0 3.88.93 7.56 2.56 10.66l8.02-6.22z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.33 0 11.93-2.09 15.91-5.68l-7.57-5.86c-2.1 1.41-4.79 2.24-8.34 2.24-6.23 0-11.5-3.8-13.42-9.22l-8.02 6.22C6.51 42.62 14.62 48 24 48z"
+      />
+    </svg>
+  );
+}
+
 const Login: React.FC<any> = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const auth = useSelector((state: RootState) => state.auth);
-  const sessionToken = localStorage.getItem("sessionToken");
+  // const sessionToken = localStorage.getItem("sessionToken");
 
   useEffect(() => {
-    if (auth.userInfo || sessionToken) {
+    if (auth.userInfo) {
       navigate("/dashboard", { replace: true });
     }
-  }, [auth.userInfo, sessionToken, navigate]);
+  }, [auth.userInfo, navigate]);
 
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -95,43 +123,25 @@ const Login: React.FC<any> = () => {
 
     try {
       if (isLogin) {
-        const response = await login({
+        await login({
           email: formData.email,
           password: formData.password,
           rememberMe: formData.rememberMe,
         });
 
-        if (!response || !response.accessToken) {
-          throw new Error("Invalid response from server. Please try again.");
-        }
+        // After login, ask backend who we are
+        const me = await getMe();
 
-        // Save auth in redux
-        dispatch(
-          setAuth({
-            userInfo: response.userInfo,
-            accessToken: response.accessToken,
-            sessionToken: response.sessionToken,
-          })
-        );
+        dispatch(setAuth({ userInfo: me.user }));
 
-        // set the global user id for frontend services to pick up (and persist)
+        // Optional legacy global reference (only after backend verification)
         try {
-          (window as any).currentUserId = response.userInfo?.id || null;
-          if (response.userInfo?.id) {
-            localStorage.setItem("currentUserId", String(response.userInfo.id));
-          }
-        } catch (err) {
-          // ignore localStorage errors
-        }
-
-        // optionally persist sessionToken as you already do
-        if (response.sessionToken) {
-          localStorage.setItem("sessionToken", response.sessionToken);
-        }
+          (window as any).currentUserId = me.user.id;
+        } catch {}
 
         navigate("/dashboard");
       } else {
-        const regResponse = await register({
+        await register({
           email: formData.email,
           password: formData.password,
           firstName: formData.firstName,
@@ -139,7 +149,7 @@ const Login: React.FC<any> = () => {
           jobTitle: formData.jobTitle,
           department: formData.department,
         });
-        // Registration succeeded, set a success message and optionally prompt manual login
+
         setErrors({
           general:
             "Account created successfully! Please sign in with your new credentials.",
@@ -339,7 +349,7 @@ const Login: React.FC<any> = () => {
           </div>
 
           {/* Desktop Header */}
-          <div className="hidden lg:block text-center mb-8">
+          <div className="hidden lg:block text-center mb-4">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
               {isLogin ? "Welcome Back" : "Create Account"}
             </h2>
@@ -348,6 +358,17 @@ const Login: React.FC<any> = () => {
                 ? "Sign in to your investor relations dashboard"
                 : "Join thousands of companies using InvestorCRM"}
             </p>
+          </div>
+
+          <div className="mb-5">
+            <button
+              onClick={googleAuth}
+              type="button"
+              className="flex items-center justify-center gap-3 w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 active:scale-[0.98]"
+            >
+              <GoogleIcon className="h-5 w-5" />
+              <span>Continue with Google</span>
+            </button>
           </div>
 
           {/* Form */}
@@ -669,4 +690,3 @@ const Login: React.FC<any> = () => {
 };
 
 export default Login;
-

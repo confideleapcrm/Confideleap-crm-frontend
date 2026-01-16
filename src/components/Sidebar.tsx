@@ -12,26 +12,27 @@ const Sidebar: React.FC<{}> = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const userInfo = useSelector((state: RootState) => state.auth.userInfo);
-  console.log("userInfo", userInfo);
 
   const logout = async () => {
     try {
-      const payload = {
-        sessionToken: localStorage.getItem("sessionToken"),
-      };
-      await logoutHandler(payload);
+      // Call backend to clear cookies + invalidate session
+      await logoutHandler();
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
-      // clear redux + targeted localStorage keys
       dispatch(clearAuth());
+
+      // Clear any leftover client storage (defensive)
+      // try {
+      //   localStorage.removeItem("currentUserId");
+      // } catch {}
+
       try {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("sessionToken");
-        localStorage.removeItem("currentUserId");
+        (window as any).currentUserId = null;
       } catch {}
-      try { (window as any).currentUserId = null; } catch {}
-      navigate("/login");
+
+      // Redirect to login
+      navigate("/login", { replace: true });
     }
   };
 
@@ -95,8 +96,10 @@ const Sidebar: React.FC<{}> = () => {
             <User className="w-4 h-4 text-gray-600" />
           </div>
           <div className="ml-3">
-            <p className="text-sm font-medium text-gray-900">{userInfo?.firstName} {userInfo?.lastName}</p>
-            <p className="text-xs text-gray-500">{userInfo?.jobTitle}</p>
+            <p className="text-sm font-medium text-gray-900">
+              {userInfo?.first_name} {userInfo?.last_name}
+            </p>
+            <p className="text-xs text-gray-500">{userInfo?.job_title}</p>
           </div>
         </div>
         <button
@@ -111,4 +114,3 @@ const Sidebar: React.FC<{}> = () => {
 };
 
 export default Sidebar;
-

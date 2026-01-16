@@ -36,19 +36,19 @@ export const configObject = {
       icon: Building,
       path: "/customer-database" as const,
     },
-    { name: "Campaigns", icon: Megaphone, path: "/campaigns" as const },
-    {
-      name: "Investor Analytics",
-      icon: Activity,
-      path: "/investor-analytics" as const,
-    },
-    {
-      name: "Campaign Performance",
-      icon: PieChart,
-      path: "/campaign-performance" as const,
-    },
-    { name: "ROI Analysis", icon: Calculator, path: "/roi-analysis" as const },
-    { name: "Reports", icon: FileText, path: "/reports" as const },
+    // { name: "Campaigns", icon: Megaphone, path: "/campaigns" as const },
+    // {
+    //   name: "Investor Analytics",
+    //   icon: Activity,
+    //   path: "/investor-analytics" as const,
+    // },
+    // {
+    //   name: "Campaign Performance",
+    //   icon: PieChart,
+    //   path: "/campaign-performance" as const,
+    // },
+    // { name: "ROI Analysis", icon: Calculator, path: "/roi-analysis" as const },
+    // { name: "Reports", icon: FileText, path: "/reports" as const },
     { name: "Settings", icon: Settings, path: "/settings" as const },
   ],
 };

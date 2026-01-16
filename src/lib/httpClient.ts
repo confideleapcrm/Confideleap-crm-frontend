@@ -1,36 +1,32 @@
 import axios from "axios";
 
 const httpClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "https://devapi.confideleap.com",
+  baseURL:  "http://localhost:3000",
   withCredentials: true,
 });
 
 /* ===============================
    REQUEST INTERCEPTOR
 ================================ */
-httpClient.interceptors.request.use((config) => {
-  const accessToken = localStorage.getItem("accessToken");
+// httpClient.interceptors.request.use((config) => {
+//   const accessToken = localStorage.getItem("accessToken");
 
-  if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`;
-  }
+//   if (accessToken) {
+//     config.headers.Authorization = `Bearer ${accessToken}`;
+//   }
 
-  return config;
-});
+//   return config;
+// });
 
 /* ===============================
    RESPONSE INTERCEPTOR (REFRESH)
 ================================ */
 let isRefreshing = false;
-let failedQueue: any[] = [];
+let refreshQueue: Array<() => void> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) prom.reject(error);
-    else prom.resolve(token);
-  });
-
-  failedQueue = [];
+const processQueue = () => {
+  refreshQueue.forEach((cb) => cb());
+  refreshQueue = [];
 };
 
 httpClient.interceptors.response.use(
@@ -38,47 +34,36 @@ httpClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Only handle 403 from expired token
-    if (
-      error.response?.status === 403 &&
-      !originalRequest._retry
-    ) {
+    // 🚫 Do NOT intercept verify-session itself (prevents loops)
+    if (originalRequest?.url?.includes("/api/auth/verify-session")) {
+      return Promise.reject(error);
+    }
+
+    // Only handle 401 once per request
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return httpClient(originalRequest);
+        return new Promise((resolve) => {
+          refreshQueue.push(() => resolve(httpClient(originalRequest)));
         });
       }
 
       isRefreshing = true;
 
       try {
-        const sessionToken = localStorage.getItem("sessionToken");
-        if (!sessionToken) throw error;
+        // 🔁 Try refreshing session (cookie-based)
+        await httpClient.get("/api/auth/verify-session");
 
-        const res = await axios.post(
-          "/api/auth/refresh-token",
-          { sessionToken },
-          { baseURL: httpClient.defaults.baseURL }
-        );
-
-        const newAccessToken = res.data.accessToken;
-        localStorage.setItem("accessToken", newAccessToken);
-
-        httpClient.defaults.headers.Authorization = `Bearer ${newAccessToken}`;
-        processQueue(null, newAccessToken);
-
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        processQueue();
         return httpClient(originalRequest);
-      } catch (err) {
-        processQueue(err, null);
-        localStorage.clear();
-        window.location.href = "/login";
-        return Promise.reject(err);
+      } catch (refreshError) {
+        processQueue();
+
+        // 🔥 HARD LOGOUT – guaranteed
+        isRefreshing = false;
+
+        return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
@@ -87,5 +72,6 @@ httpClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 
 export default httpClient;
