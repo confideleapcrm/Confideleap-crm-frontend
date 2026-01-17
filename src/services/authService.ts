@@ -1,6 +1,12 @@
 // src/services/authService.ts
 import httpClient from "../lib/httpClient";
 
+
+const API_BASE_URL =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:3000"
+    : "https://devapi.confideleap.com";
+    
 export const login = async (payload: any) => {
   const res = await httpClient.post("/api/auth/login", payload);
 
@@ -15,13 +21,15 @@ export const login = async (payload: any) => {
   return res.data;
 };
 
-export const googleAuth = async()=>{
+export const googleAuth = () => {
   try {
-    window.open("devapi.confideleap.com/api/auth/google", "_self");
+    // Redirect to backend OAuth endpoint
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
   } catch (error) {
     console.error(error);
   }
-}
+};
+
 export const logout = async () => {
   try {
     await httpClient.post("/api/auth/logout");
