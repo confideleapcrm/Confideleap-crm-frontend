@@ -10,26 +10,31 @@ import { getMe, verifySession } from "./services/authService.ts";
 import { clearAuth, setAuth } from "./store/slices/authSlice.ts";
 
 // read persisted user id at bootstrap so services can use it synchronously
-try {
-  const me = await getMe();
-  store.dispatch(setAuth({ userInfo: me.user }));
-  (window as any).currentUserId = me.user.id;
-} catch {
+async function bootstrapAuth() {
   try {
-    const refreshed = await verifySession();
-    store.dispatch(setAuth({ userInfo: refreshed.user }));
-    (window as any).currentUserId = refreshed.user.id;
+    const me = await getMe();
+    store.dispatch(setAuth({ userInfo: me.user }));
+    (window as any).currentUserId = me.user.id;
   } catch {
-    store.dispatch(clearAuth());
-    (window as any).currentUserId = null;
+    try {
+      const refreshed = await verifySession();
+      store.dispatch(setAuth({ userInfo: refreshed.user }));
+      (window as any).currentUserId = refreshed.user.id;
+    } catch {
+      store.dispatch(clearAuth());
+      (window as any).currentUserId = null;
+    }
   }
 }
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <BrowserRouter>
-      <Provider store={store}>
-        <App />
-      </Provider>
-    </BrowserRouter>
-  </StrictMode>
-);
+
+bootstrapAuth().finally(() => {
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <BrowserRouter>
+        <Provider store={store}>
+          <App />
+        </Provider>
+      </BrowserRouter>
+    </StrictMode>
+  );
+});
