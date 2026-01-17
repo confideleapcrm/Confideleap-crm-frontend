@@ -17,7 +17,7 @@ export const login = async (payload: any) => {
 
 export const googleAuth = async()=>{
   try {
-    window.open("devapi.confideleap.com/api/auth/google", "_self");
+    window.open("https://devapi.confideleap.com/api/auth/google/callback", "_self");
   } catch (error) {
     console.error(error);
   }
