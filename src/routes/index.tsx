@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import { routes } from "../utils/routes";
+import ProtectedRoutes from "../components/ProtectedRoutes";
 
 interface AppRoutesProps {
   [key: string]: any;
@@ -12,21 +13,23 @@ const PageLoader = () => (
   </div>
 );
 
-const AppRoutes: React.FC<AppRoutesProps> = (props) => {
+const AppRoutes = () => {
   return (
     <Suspense fallback={<PageLoader />}>
+      {/* <ProtectedRoutes> */}
       <Routes>
         {routes.map((item, index) => {
           const Component = item.component;
           return (
             <Route
-              key={"route" + index}
+              key={`route-${index}`}
               path={item.path}
-              element={<Component {...props} />}
+              element={<Component />}
             />
           );
         })}
       </Routes>
+      {/* </ProtectedRoutes> */}
     </Suspense>
   );
 };

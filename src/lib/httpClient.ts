@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const httpClient = axios.create({
-  baseURL:  "https://devapi.confideleap.com",
+  baseURL:  "http://localhost:3000",
   withCredentials: true,
 });
 

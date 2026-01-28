@@ -9,7 +9,7 @@ const InvestorImport = lazy(() => import("../components/InvestorImport"));
 const Campaigns = lazy(() => import("../components/Campaigns"));
 const InvestorAnalytics = lazy(() => import("../components/InvestorAnalytics"));
 const CampaignPerformance = lazy(
-  () => import("../components/CampaignPerformance")
+  () => import("../components/CampaignPerformance"),
 );
 const ROIAnalysis = lazy(() => import("../components/ROIAnalysis"));
 const Reports = lazy(() => import("../components/Reports"));

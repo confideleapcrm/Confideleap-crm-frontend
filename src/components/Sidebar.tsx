@@ -1,17 +1,19 @@
 // src/components/Sidebar.tsx
 import React from "react";
 import { TrendingUp, User } from "lucide-react";
-import { configObject } from "../utils/helper";
 import { NavLink, useNavigate } from "react-router-dom";
 import { clearAuth } from "../store/slices/authSlice";
 import { RootState } from "../store/store";
 import { useDispatch, useSelector } from "react-redux";
 import { logout as logoutHandler } from "../services/authService";
+import { ROUTE_CONFIG } from "../utils/helper";
 
 const Sidebar: React.FC<{}> = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const userInfo = useSelector((state: RootState) => state.auth.userInfo);
+
+  console.log(userInfo);
 
   const logout = async () => {
     try {
@@ -50,12 +52,15 @@ const Sidebar: React.FC<{}> = () => {
       </div>
 
       <nav className="px-4 pb-4 space-y-1">
-        {configObject.navigation.map((item) => {
+        {ROUTE_CONFIG?.filter((route) =>
+          userInfo?.allowed_routes?.includes(route.path),
+        ).map((item) => {
           const Icon = item.icon;
+
           return (
             <NavLink
               to={item.path}
-              key={item.name}
+              key={item.label}
               onClick={() => {}}
               className={({ isActive }) => {
                 const baseClasses =
@@ -82,7 +87,7 @@ const Sidebar: React.FC<{}> = () => {
           }
         `}
                   />
-                  {item.name}
+                  {item.label}
                 </>
               )}
             </NavLink>
