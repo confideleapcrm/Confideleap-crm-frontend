@@ -35,7 +35,10 @@ type Props = {
 };
 
 /* ======================= helper: generate per-row unique key ======================= */
-const makeClientRowKey = (investorId: string | number, companyId: string | null) => {
+const makeClientRowKey = (
+  investorId: string | number,
+  companyId: string | null,
+) => {
   // Unique key for each investor+company row on the client. Non-invasive field.
   return `${investorId}::${companyId ?? "null"}::${Date.now()}::${Math.floor(Math.random() * 10000)}`;
 };
@@ -64,329 +67,19 @@ const ScheduleModal: React.FC<{
   parentFilterActive = false,
   parentCompanyOptions = [],
 }) => {
-    const [meetingType, setMeetingType] = useState<"virtual" | "physical">(
-      initialType
-    );
-    const [meetingDateTime, setMeetingDateTime] = useState<string>(
-      initialDate || ""
-    );
-    const notesRef = useRef<HTMLTextAreaElement | null>(null);
-    const [companyQueryLocal, setCompanyQueryLocal] = useState("");
-    const [companyResultsLocal, setCompanyResultsLocal] = useState<any[]>([]);
-    const [companySearchingLocal, setCompanySearchingLocal] = useState(false);
-    const [selectedCompanyLocal, setSelectedCompanyLocal] = useState<any | null>(
-      null
-    );
-    const [hasSubmitted, setHasSubmitted] = useState(false);
-
-    const doLocalCompanySearch = useMemo(
-      () =>
-        debounce(async (q: string) => {
-          if (!q || q.trim().length < 1) {
-            setCompanyResultsLocal([]);
-            setCompanySearchingLocal(false);
-            return;
-          }
-          setCompanySearchingLocal(true);
-          try {
-            const res = await getCompanies({ search: q, limit: 8 });
-            const companies = res?.companies ?? res?.data ?? res ?? [];
-            setCompanyResultsLocal(Array.isArray(companies) ? companies : []);
-          } catch (err) {
-            console.error("company search failed", err);
-            setCompanyResultsLocal([]);
-          } finally {
-            setCompanySearchingLocal(false);
-          }
-        }, 300),
-      []
-    );
-
-    useEffect(() => {
-      if (!open) return;
-      // If parent filter isn't active, continue the normal search behavior
-      if (!parentFilterActive) doLocalCompanySearch(companyQueryLocal);
-      return () => doLocalCompanySearch.cancel();
-    }, [companyQueryLocal, doLocalCompanySearch, open, parentFilterActive]);
-
-    useEffect(() => {
-      if (open) {
-        setMeetingType(initialType);
-        setMeetingDateTime(initialDate || "");
-        if (notesRef.current) notesRef.current.value = "";
-        setCompanyQueryLocal("");
-        setCompanyResultsLocal([]);
-        setSelectedCompanyLocal(null);
-        setHasSubmitted(false);
-      }
-    }, [open, initialType, initialDate, parentFilterActive, parentCompanyOptions]);
-
-    useEffect(() => {
-      // If parent filter is active and exactly one parent company option exists, preselect it
-      if (open && parentFilterActive && Array.isArray(parentCompanyOptions) && parentCompanyOptions.length === 1) {
-        setSelectedCompanyLocal(parentCompanyOptions[0]);
-      }
-    }, [open, parentFilterActive, parentCompanyOptions]);
-
-    if (!open) return null;
-
-    const title =
-      mode === "interested"
-        ? context === "interestedMeta"
-          ? "Interested — Add Company & Notes"
-          : "Schedule Meeting"
-        : mode === "followups"
-          ? "Schedule Follow-up"
-          : "Not Interested — Add Comment";
-
-    const primaryLabel =
-      mode === "not_interested" ||
-        (mode === "interested" && context === "interestedMeta")
-        ? "Save"
-        : "Schedule";
-
-    // small helper to show status text from company object
-    const companyStatusText = (c: any) => {
-      if (!c) return "";
-      if (c.status) return c.status;
-      if (c.active !== undefined) return c.active ? "Active" : "Inactive";
-      if (c.isActive !== undefined) return c.isActive ? "Active" : "Inactive";
-      return c.state || "";
-    };
-
-    // ---------- INLINE RENDER ----------
-    return (
-      <div className="mt-3 p-4 border rounded bg-white shadow-sm">
-        <h3 className="text-lg font-semibold mb-4">{title}</h3>
-
-        {/* Company selector */}
-        <div className="mb-3">
-          <label className="block text-sm font-medium mb-2">
-            Company {context === "interestedMeta" ? "" : "(optional)"}
-          </label>
-
-          {/* If parent filter active → show only those companies as a selectable list (no search) */}
-          {parentFilterActive && Array.isArray(parentCompanyOptions) && parentCompanyOptions.length > 0 ? (
-            <div className="max-h-48 overflow-auto border rounded p-2">
-              {parentCompanyOptions.map((c: any) => {
-                const cid = String(c.id ?? c.company_id ?? c.companyId ?? c.uuid ?? c._id ?? "");
-                const selectedId = String(selectedCompanyLocal?.id ?? selectedCompanyLocal?.company_id ?? "");
-                const isSelected = selectedId === cid;
-
-                return (
-                  <div
-                    key={cid}
-                    className={`flex items-start gap-3 px-3 py-2 rounded cursor-pointer hover:bg-gray-50 ${isSelected ? "bg-blue-50 ring-1 ring-blue-200" : ""}`}
-                    onClick={() => setSelectedCompanyLocal(c)}
-                  >
-                    {/* visual checkbox (controlled, still single-select) */}
-                    <div className="flex-shrink-0 mt-1">
-                      <input
-                        type="checkbox"
-                        readOnly
-                        checked={isSelected}
-                        className="w-4 h-4 rounded border-gray-300"
-                      />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium truncate">
-                          {c.name || c.company_name || c.title || c.label}
-                        </div>
-                        <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">
-                          {companyStatusText(c)}
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500 truncate mt-1">
-                        {c.website ?? c.web ?? ""}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            // fallback to legacy behaviour: search + autocomplete
-            selectedCompanyLocal ? (
-              <div className="flex items-center gap-2">
-                <div className="px-3 py-1 bg-gray-100 rounded-full text-sm">
-                  {selectedCompanyLocal.name}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCompanyLocal(null)}
-                  className="px-2 py-1 border rounded text-sm"
-                >
-                  Clear
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search company by name..."
-                  value={companyQueryLocal}
-                  onChange={(e) => setCompanyQueryLocal(e.target.value)}
-                  className="w-full px-3 py-2 border rounded"
-                />
-                {companySearchingLocal && (
-                  <div className="absolute right-3 top-3 text-xs text-gray-500">
-                    Searching…
-                  </div>
-                )}
-                {companyResultsLocal &&
-                  companyResultsLocal.length > 0 &&
-                  companyQueryLocal.trim().length > 0 && (
-                    <div className="absolute left-0 right-0 mt-1 bg-white border rounded shadow z-50 max-h-48 overflow-auto">
-                      {companyResultsLocal.map((c: any) => (
-                        <button
-                          key={c.id ?? c.name}
-                          onClick={() => {
-                            setSelectedCompanyLocal(c);
-                            setCompanyResultsLocal([]);
-                            setCompanyQueryLocal("");
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b last:border-b-0"
-                        >
-                          <div className="font-medium">{c.name}</div>
-                          <div className="text-xs text-gray-500 truncate">
-                            {c.website ?? c.web ?? ""}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-              </div>
-            )
-          )}
-        </div>
-
-        {/* Meeting type only for full meeting scheduling (not interestedMeta) */}
-        {mode === "interested" && context !== "interestedMeta" && (
-          <div className="mb-3">
-            <label className="block text-sm font-medium mb-2">Type</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className={`px-3 py-1 rounded ${meetingType === "virtual"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100"
-                  }`}
-                onClick={() => setMeetingType("virtual")}
-              >
-                Virtual
-              </button>
-              <button
-                type="button"
-                className={`px-3 py-1 rounded ${meetingType === "physical"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100"
-                  }`}
-                onClick={() => setMeetingType("physical")}
-              >
-                Physical
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Date & time for meeting / follow-up (hidden for interestedMeta) */}
-        {mode !== "not_interested" && context !== "interestedMeta" && (
-          <div className="mb-3">
-            <label className="block text-sm font-medium mb-2">
-              Date &amp; Time
-            </label>
-            <input
-              type="datetime-local"
-              value={meetingDateTime}
-              onChange={(e) => setMeetingDateTime(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
-            />
-          </div>
-        )}
-
-        {/* Notes */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">
-            Notes {mode === "not_interested" ? "(optional)" : ""}
-          </label>
-          <textarea
-            ref={notesRef}
-            rows={5}
-            className="w-full px-3 py-2 border rounded"
-          />
-        </div>
-
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            className="px-4 py-2 border rounded bg-gray-100"
-            onClick={onClose}
-          >
-            Close
-          </button>
-          <button
-            type="button"
-            disabled={hasSubmitted}
-            className={`px-4 py-2 rounded text-white transition-opacity
-        ${hasSubmitted ? "bg-blue-400 opacity-50 cursor-not-allowed" : "bg-blue-600"}`}
-            onClick={async () => {
-              try {
-                setHasSubmitted(true);
-                const payload: any = {
-                  meeting_type: meetingType,
-                  meeting_datetime: meetingDateTime || null,
-                  notes: notesRef.current?.value || null,
-                  company_id: selectedCompanyLocal
-                    ? selectedCompanyLocal.id ??
-                    selectedCompanyLocal.company_id ??
-                    null
-                    : null,
-                };
-                await onSchedule(payload);
-              } catch (e) {
-                setHasSubmitted(false); // ❗ revert if failed
-                throw e;
-              }
-            }}
-          >
-            {primaryLabel}
-          </button>
-
-        </div>
-      </div>
-    );
-  };
-/* ======================= MEETING MANAGE MODAL (now INLINE) ======================= */
-
-const MeetingManageModal: React.FC<{
-  open: boolean;
-  onClose: () => void;
-  onScheduleMeeting: (payload: any) => Promise<void>;
-  onUpdateStatus: (
-    status: "scheduled" | "completed",
-    payload: any
-  ) => Promise<void>;
-  parentFilterActive?: boolean;
-  parentCompanyOptions?: any[];
-}> = ({ open, onClose, onScheduleMeeting, onUpdateStatus, parentFilterActive = false, parentCompanyOptions = [] }) => {
   const [meetingType, setMeetingType] = useState<"virtual" | "physical">(
-    "virtual"
+    initialType,
   );
-  const [meetingDateTime, setMeetingDateTime] = useState<string>("");
+  const [meetingDateTime, setMeetingDateTime] = useState<string>(
+    initialDate || "",
+  );
   const notesRef = useRef<HTMLTextAreaElement | null>(null);
   const [companyQueryLocal, setCompanyQueryLocal] = useState("");
   const [companyResultsLocal, setCompanyResultsLocal] = useState<any[]>([]);
   const [companySearchingLocal, setCompanySearchingLocal] = useState(false);
   const [selectedCompanyLocal, setSelectedCompanyLocal] = useState<any | null>(
-    null
+    null,
   );
-
-  // new: action selector under Type
-  // 'schedule' = create/schedule meeting
-  // 'markdone' = mark latest meeting as completed on Save
-  const [actionMode, setActionMode] = useState<"schedule" | "markdone">("schedule");
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const doLocalCompanySearch = useMemo(
@@ -409,7 +102,344 @@ const MeetingManageModal: React.FC<{
           setCompanySearchingLocal(false);
         }
       }, 300),
-    []
+    [],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    // If parent filter isn't active, continue the normal search behavior
+    if (!parentFilterActive) doLocalCompanySearch(companyQueryLocal);
+    return () => doLocalCompanySearch.cancel();
+  }, [companyQueryLocal, doLocalCompanySearch, open, parentFilterActive]);
+
+  useEffect(() => {
+    if (open) {
+      setMeetingType(initialType);
+      setMeetingDateTime(initialDate || "");
+      if (notesRef.current) notesRef.current.value = "";
+      setCompanyQueryLocal("");
+      setCompanyResultsLocal([]);
+      setSelectedCompanyLocal(null);
+      setHasSubmitted(false);
+    }
+  }, [
+    open,
+    initialType,
+    initialDate,
+    parentFilterActive,
+    parentCompanyOptions,
+  ]);
+
+  useEffect(() => {
+    // If parent filter is active and exactly one parent company option exists, preselect it
+    if (
+      open &&
+      parentFilterActive &&
+      Array.isArray(parentCompanyOptions) &&
+      parentCompanyOptions.length === 1
+    ) {
+      setSelectedCompanyLocal(parentCompanyOptions[0]);
+    }
+  }, [open, parentFilterActive, parentCompanyOptions]);
+
+  if (!open) return null;
+
+  const title =
+    mode === "interested"
+      ? context === "interestedMeta"
+        ? "Interested — Add Company & Notes"
+        : "Schedule Meeting"
+      : mode === "followups"
+        ? "Schedule Follow-up"
+        : "Not Interested — Add Comment";
+
+  const primaryLabel =
+    mode === "not_interested" ||
+    (mode === "interested" && context === "interestedMeta")
+      ? "Save"
+      : "Schedule";
+
+  // small helper to show status text from company object
+  const companyStatusText = (c: any) => {
+    if (!c) return "";
+    if (c.status) return c.status;
+    if (c.active !== undefined) return c.active ? "Active" : "Inactive";
+    if (c.isActive !== undefined) return c.isActive ? "Active" : "Inactive";
+    return c.state || "";
+  };
+
+  // ---------- INLINE RENDER ----------
+  return (
+    <div className="mt-3 p-4 border rounded bg-white shadow-sm">
+      <h3 className="text-lg font-semibold mb-4">{title}</h3>
+
+      {/* Company selector */}
+      <div className="mb-3">
+        <label className="block text-sm font-medium mb-2">
+          Company {context === "interestedMeta" ? "" : "(optional)"}
+        </label>
+
+        {/* If parent filter active → show only those companies as a selectable list (no search) */}
+        {parentFilterActive &&
+        Array.isArray(parentCompanyOptions) &&
+        parentCompanyOptions.length > 0 ? (
+          <div className="max-h-48 overflow-auto border rounded p-2">
+            {parentCompanyOptions.map((c: any) => {
+              const cid = String(
+                c.id ?? c.company_id ?? c.companyId ?? c.uuid ?? c._id ?? "",
+              );
+              const selectedId = String(
+                selectedCompanyLocal?.id ??
+                  selectedCompanyLocal?.company_id ??
+                  "",
+              );
+              const isSelected = selectedId === cid;
+
+              return (
+                <div
+                  key={cid}
+                  className={`flex items-start gap-3 px-3 py-2 rounded cursor-pointer hover:bg-gray-50 ${isSelected ? "bg-blue-50 ring-1 ring-blue-200" : ""}`}
+                  onClick={() => setSelectedCompanyLocal(c)}
+                >
+                  {/* visual checkbox (controlled, still single-select) */}
+                  <div className="flex-shrink-0 mt-1">
+                    <input
+                      type="checkbox"
+                      readOnly
+                      checked={isSelected}
+                      className="w-4 h-4 rounded border-gray-300"
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium truncate">
+                        {c.name || c.company_name || c.title || c.label}
+                      </div>
+                      <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">
+                        {companyStatusText(c)}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 truncate mt-1">
+                      {c.website ?? c.web ?? ""}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : // fallback to legacy behaviour: search + autocomplete
+        selectedCompanyLocal ? (
+          <div className="flex items-center gap-2">
+            <div className="px-3 py-1 bg-gray-100 rounded-full text-sm">
+              {selectedCompanyLocal.name}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedCompanyLocal(null)}
+              className="px-2 py-1 border rounded text-sm"
+            >
+              Clear
+            </button>
+          </div>
+        ) : (
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search company by name..."
+              value={companyQueryLocal}
+              onChange={(e) => setCompanyQueryLocal(e.target.value)}
+              className="w-full px-3 py-2 border rounded"
+            />
+            {companySearchingLocal && (
+              <div className="absolute right-3 top-3 text-xs text-gray-500">
+                Searching…
+              </div>
+            )}
+            {companyResultsLocal &&
+              companyResultsLocal.length > 0 &&
+              companyQueryLocal.trim().length > 0 && (
+                <div className="absolute left-0 right-0 mt-1 bg-white border rounded shadow z-50 max-h-48 overflow-auto">
+                  {companyResultsLocal.map((c: any) => (
+                    <button
+                      key={c.id ?? c.name}
+                      onClick={() => {
+                        setSelectedCompanyLocal(c);
+                        setCompanyResultsLocal([]);
+                        setCompanyQueryLocal("");
+                      }}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b last:border-b-0"
+                    >
+                      <div className="font-medium">{c.name}</div>
+                      <div className="text-xs text-gray-500 truncate">
+                        {c.website ?? c.web ?? ""}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+          </div>
+        )}
+      </div>
+
+      {/* Meeting type only for full meeting scheduling (not interestedMeta) */}
+      {mode === "interested" && context !== "interestedMeta" && (
+        <div className="mb-3">
+          <label className="block text-sm font-medium mb-2">Type</label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className={`px-3 py-1 rounded ${
+                meetingType === "virtual"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100"
+              }`}
+              onClick={() => setMeetingType("virtual")}
+            >
+              Virtual
+            </button>
+            <button
+              type="button"
+              className={`px-3 py-1 rounded ${
+                meetingType === "physical"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100"
+              }`}
+              onClick={() => setMeetingType("physical")}
+            >
+              Physical
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Date & time for meeting / follow-up (hidden for interestedMeta) */}
+      {mode !== "not_interested" && context !== "interestedMeta" && (
+        <div className="mb-3">
+          <label className="block text-sm font-medium mb-2">
+            Date &amp; Time
+          </label>
+          <input
+            type="datetime-local"
+            value={meetingDateTime}
+            onChange={(e) => setMeetingDateTime(e.target.value)}
+            className="w-full px-3 py-2 border rounded"
+          />
+        </div>
+      )}
+
+      {/* Notes */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-2">
+          Notes {mode === "not_interested" ? "(optional)" : ""}
+        </label>
+        <textarea
+          ref={notesRef}
+          rows={5}
+          className="w-full px-3 py-2 border rounded"
+        />
+      </div>
+
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          className="px-4 py-2 border rounded bg-gray-100"
+          onClick={onClose}
+        >
+          Close
+        </button>
+        <button
+          type="button"
+          disabled={hasSubmitted}
+          className={`px-4 py-2 rounded text-white transition-opacity
+        ${hasSubmitted ? "bg-blue-400 opacity-50 cursor-not-allowed" : "bg-blue-600"}`}
+          onClick={async () => {
+            try {
+              setHasSubmitted(true);
+              const payload: any = {
+                meeting_type: meetingType,
+                meeting_datetime: meetingDateTime || null,
+                notes: notesRef.current?.value || null,
+                company_id: selectedCompanyLocal
+                  ? (selectedCompanyLocal.id ??
+                    selectedCompanyLocal.company_id ??
+                    null)
+                  : null,
+              };
+              await onSchedule(payload);
+            } catch (e) {
+              setHasSubmitted(false); // ❗ revert if failed
+              throw e;
+            }
+          }}
+        >
+          {primaryLabel}
+        </button>
+      </div>
+    </div>
+  );
+};
+/* ======================= MEETING MANAGE MODAL (now INLINE) ======================= */
+
+const MeetingManageModal: React.FC<{
+  open: boolean;
+  onClose: () => void;
+  onScheduleMeeting: (payload: any) => Promise<void>;
+  onUpdateStatus: (
+    status: "scheduled" | "completed",
+    payload: any,
+  ) => Promise<void>;
+  parentFilterActive?: boolean;
+  parentCompanyOptions?: any[];
+}> = ({
+  open,
+  onClose,
+  onScheduleMeeting,
+  onUpdateStatus,
+  parentFilterActive = false,
+  parentCompanyOptions = [],
+}) => {
+  const [meetingType, setMeetingType] = useState<"virtual" | "physical">(
+    "virtual",
+  );
+  const [meetingDateTime, setMeetingDateTime] = useState<string>("");
+  const notesRef = useRef<HTMLTextAreaElement | null>(null);
+  const [companyQueryLocal, setCompanyQueryLocal] = useState("");
+  const [companyResultsLocal, setCompanyResultsLocal] = useState<any[]>([]);
+  const [companySearchingLocal, setCompanySearchingLocal] = useState(false);
+  const [selectedCompanyLocal, setSelectedCompanyLocal] = useState<any | null>(
+    null,
+  );
+
+  // new: action selector under Type
+  // 'schedule' = create/schedule meeting
+  // 'markdone' = mark latest meeting as completed on Save
+  const [actionMode, setActionMode] = useState<"schedule" | "markdone">(
+    "schedule",
+  );
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  const doLocalCompanySearch = useMemo(
+    () =>
+      debounce(async (q: string) => {
+        if (!q || q.trim().length < 1) {
+          setCompanyResultsLocal([]);
+          setCompanySearchingLocal(false);
+          return;
+        }
+        setCompanySearchingLocal(true);
+        try {
+          const res = await getCompanies({ search: q, limit: 8 });
+          const companies = res?.companies ?? res?.data ?? res ?? [];
+          setCompanyResultsLocal(Array.isArray(companies) ? companies : []);
+        } catch (err) {
+          console.error("company search failed", err);
+          setCompanyResultsLocal([]);
+        } finally {
+          setCompanySearchingLocal(false);
+        }
+      }, 300),
+    [],
   );
 
   useEffect(() => {
@@ -433,7 +463,12 @@ const MeetingManageModal: React.FC<{
   }, [open, parentFilterActive, parentCompanyOptions]);
 
   useEffect(() => {
-    if (open && parentFilterActive && Array.isArray(parentCompanyOptions) && parentCompanyOptions.length === 1) {
+    if (
+      open &&
+      parentFilterActive &&
+      Array.isArray(parentCompanyOptions) &&
+      parentCompanyOptions.length === 1
+    ) {
       setSelectedCompanyLocal(parentCompanyOptions[0]);
     }
   }, [open, parentFilterActive, parentCompanyOptions]);
@@ -452,7 +487,9 @@ const MeetingManageModal: React.FC<{
     meeting_type: meetingType,
     meeting_datetime: meetingDateTime || null,
     notes: notesRef.current?.value || null,
-    company_id: selectedCompanyLocal ? selectedCompanyLocal.id ?? selectedCompanyLocal.company_id ?? null : null,
+    company_id: selectedCompanyLocal
+      ? (selectedCompanyLocal.id ?? selectedCompanyLocal.company_id ?? null)
+      : null,
   });
 
   // ---------- INLINE RENDER ----------
@@ -462,13 +499,21 @@ const MeetingManageModal: React.FC<{
 
       {/* Company selector */}
       <div className="mb-3">
-        <label className="block text-sm font-medium mb-2">Company (required)</label>
+        <label className="block text-sm font-medium mb-2">
+          Company (required)
+        </label>
 
-        {parentFilterActive && Array.isArray(parentCompanyOptions) && parentCompanyOptions.length > 0 ? (
+        {parentFilterActive &&
+        Array.isArray(parentCompanyOptions) &&
+        parentCompanyOptions.length > 0 ? (
           <div className="max-h-48 overflow-auto border rounded p-2">
             {parentCompanyOptions.map((c: any) => {
               const cid = String(c.id ?? c.company_id ?? "");
-              const selectedId = String(selectedCompanyLocal?.id ?? selectedCompanyLocal?.company_id ?? "");
+              const selectedId = String(
+                selectedCompanyLocal?.id ??
+                  selectedCompanyLocal?.company_id ??
+                  "",
+              );
               const isSelected = selectedId === cid;
 
               return (
@@ -488,10 +533,16 @@ const MeetingManageModal: React.FC<{
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium truncate">{c.name}</div>
-                      <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">{companyStatusText(c)}</div>
+                      <div className="text-sm font-medium truncate">
+                        {c.name}
+                      </div>
+                      <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">
+                        {companyStatusText(c)}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 truncate mt-1">{c.website ?? c.web ?? ""}</div>
+                    <div className="text-xs text-gray-500 truncate mt-1">
+                      {c.website ?? c.web ?? ""}
+                    </div>
                   </div>
                 </div>
               );
@@ -502,7 +553,13 @@ const MeetingManageModal: React.FC<{
             <div className="px-3 py-1 bg-gray-100 rounded-full text-sm">
               {selectedCompanyLocal.name}
             </div>
-            <button type="button" onClick={() => setSelectedCompanyLocal(null)} className="px-2 py-1 border rounded text-sm">Clear</button>
+            <button
+              type="button"
+              onClick={() => setSelectedCompanyLocal(null)}
+              className="px-2 py-1 border rounded text-sm"
+            >
+              Clear
+            </button>
           </div>
         ) : (
           <div className="relative">
@@ -513,25 +570,33 @@ const MeetingManageModal: React.FC<{
               onChange={(e) => setCompanyQueryLocal(e.target.value)}
               className="w-full px-3 py-2 border rounded"
             />
-            {companySearchingLocal && <div className="absolute right-3 top-3 text-xs text-gray-500">Searching…</div>}
-            {companyResultsLocal && companyResultsLocal.length > 0 && companyQueryLocal.trim().length > 0 && (
-              <div className="absolute left-0 right-0 mt-1 bg-white border rounded shadow z-50 max-h-48 overflow-auto">
-                {companyResultsLocal.map((c: any) => (
-                  <button
-                    key={c.id ?? c.name}
-                    onClick={() => {
-                      setSelectedCompanyLocal(c);
-                      setCompanyResultsLocal([]);
-                      setCompanyQueryLocal("");
-                    }}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b last:border-b-0"
-                  >
-                    <div className="font-medium">{c.name}</div>
-                    <div className="text-xs text-gray-500 truncate">{c.website ?? c.web ?? ""}</div>
-                  </button>
-                ))}
+            {companySearchingLocal && (
+              <div className="absolute right-3 top-3 text-xs text-gray-500">
+                Searching…
               </div>
             )}
+            {companyResultsLocal &&
+              companyResultsLocal.length > 0 &&
+              companyQueryLocal.trim().length > 0 && (
+                <div className="absolute left-0 right-0 mt-1 bg-white border rounded shadow z-50 max-h-48 overflow-auto">
+                  {companyResultsLocal.map((c: any) => (
+                    <button
+                      key={c.id ?? c.name}
+                      onClick={() => {
+                        setSelectedCompanyLocal(c);
+                        setCompanyResultsLocal([]);
+                        setCompanyQueryLocal("");
+                      }}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b last:border-b-0"
+                    >
+                      <div className="font-medium">{c.name}</div>
+                      <div className="text-xs text-gray-500 truncate">
+                        {c.website ?? c.web ?? ""}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
           </div>
         )}
       </div>
@@ -575,13 +640,17 @@ const MeetingManageModal: React.FC<{
           >
             Mark done
           </button>
-          <div className="text-xs text-gray-500 ml-2">(Choose action before Save)</div>
+          <div className="text-xs text-gray-500 ml-2">
+            (Choose action before Save)
+          </div>
         </div>
       </div>
 
       {/* Date & Time */}
       <div className="mb-3">
-        <label className="block text-sm font-medium mb-2">Date &amp; Time</label>
+        <label className="block text-sm font-medium mb-2">
+          Date &amp; Time
+        </label>
         <input
           type="datetime-local"
           value={meetingDateTime}
@@ -593,18 +662,28 @@ const MeetingManageModal: React.FC<{
       {/* Notes */}
       <div className="mb-4">
         <label className="block text-sm font-medium mb-2">Notes</label>
-        <textarea ref={notesRef} rows={5} className="w-full px-3 py-2 border rounded" />
+        <textarea
+          ref={notesRef}
+          rows={5}
+          className="w-full px-3 py-2 border rounded"
+        />
       </div>
 
       <div className="flex justify-end gap-3">
-        <button type="button" className="px-4 py-2 border rounded bg-gray-100" onClick={onClose}>Close</button>
+        <button
+          type="button"
+          className="px-4 py-2 border rounded bg-gray-100"
+          onClick={onClose}
+        >
+          Close
+        </button>
         <button
           type="button"
           disabled={hasSubmitted}
           className={`px-4 py-2 rounded text-white transition-opacity
-    ${hasSubmitted
-              ? "bg-blue-400 opacity-50 cursor-not-allowed"
-              : "bg-blue-600"}`}
+    ${
+      hasSubmitted ? "bg-blue-400 opacity-50 cursor-not-allowed" : "bg-blue-600"
+    }`}
           onClick={async () => {
             const payload = buildPayload();
 
@@ -625,7 +704,6 @@ const MeetingManageModal: React.FC<{
         >
           Save
         </button>
-
       </div>
     </div>
   );
@@ -638,7 +716,7 @@ const DrawerPortal: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-[1800]">{children}</div>,
-    document.body
+    document.body,
   );
 };
 /* ======================= MAIN DRAWER ======================= */
@@ -698,7 +776,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
     "date" | "company" | "activity"
   >("date");
   const [activitySortDir, setActivitySortDir] = useState<"asc" | "desc">(
-    "desc"
+    "desc",
   );
   const [activityCompanyFilter, setActivityCompanyFilter] =
     useState<string>("ALL");
@@ -716,12 +794,13 @@ const InvestorDetailDrawer: React.FC<Props> = ({
   const [markDoneModalOpen, setMarkDoneModalOpen] = useState(false);
   const [markDoneCompanyQuery, setMarkDoneCompanyQuery] = useState("");
   const [markDoneCompanyResults, setMarkDoneCompanyResults] = useState<any[]>(
-    []
+    [],
   );
   const [markDoneCompanySearching, setMarkDoneCompanySearching] =
     useState(false);
-  const [markDoneSelectedCompany, setMarkDoneSelectedCompany] =
-    useState<any | null>(null);
+  const [markDoneSelectedCompany, setMarkDoneSelectedCompany] = useState<
+    any | null
+  >(null);
   const doMarkDoneCompanySearch = useMemo(
     () =>
       debounce(async (q: string) => {
@@ -742,17 +821,23 @@ const InvestorDetailDrawer: React.FC<Props> = ({
           setMarkDoneCompanySearching(false);
         }
       }, 300),
-    []
+    [],
   );
 
   useEffect(() => {
     if (!markDoneModalOpen) return;
     // only perform typed search if parent filter is not active
-    if (!parentCompanyFilterActive) doMarkDoneCompanySearch(markDoneCompanyQuery);
+    if (!parentCompanyFilterActive)
+      doMarkDoneCompanySearch(markDoneCompanyQuery);
     return () => {
       doMarkDoneCompanySearch.cancel();
     };
-  }, [markDoneModalOpen, markDoneCompanyQuery, doMarkDoneCompanySearch, parentCompanyFilterActive]);
+  }, [
+    markDoneModalOpen,
+    markDoneCompanyQuery,
+    doMarkDoneCompanySearch,
+    parentCompanyFilterActive,
+  ]);
 
   useEffect(() => {
     if (markDoneModalOpen) {
@@ -788,9 +873,9 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       const wanted = (selectedCompanyIds || []).map((s: any) => String(s));
       const filtered = Array.isArray(companies)
         ? companies.filter((c: any) => {
-          const cid = String(c.id ?? c.company_id ?? "");
-          return wanted.includes(cid);
-        })
+            const cid = String(c.id ?? c.company_id ?? "");
+            return wanted.includes(cid);
+          })
         : [];
       setParentCompanyOptions(filtered);
     } catch (err) {
@@ -855,8 +940,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       ids.forEach((id) => {
         const found = companies.find(
           (c: any) =>
-            String(c.id) === String(id) ||
-            String(c.company_id) === String(id)
+            String(c.id) === String(id) || String(c.company_id) === String(id),
         );
         if (found && found.name) {
           map[String(id)] = found.name;
@@ -1007,7 +1091,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
             listType: "interested",
             item: serverItem,
           },
-        })
+        }),
       );
 
       // Record an "interested" interaction with notes (so it appears in Activities)
@@ -1030,11 +1114,8 @@ const InvestorDetailDrawer: React.FC<Props> = ({
 
       await fetchInvestor();
       await fetchInteractions();
-
-
     } catch (err) {
       console.error("handleInterestedMeta error", err);
-
     } finally {
       setIsProcessing(false);
     }
@@ -1107,7 +1188,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
         } catch (e) {
           console.error(
             "addInvestorToList with company_id from meeting-only flow failed (non-blocking)",
-            e
+            e,
           );
         }
       }
@@ -1158,7 +1239,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       const filtered = items.filter(
         (m) =>
           String(m.company_id || "") === String(companyId) &&
-          (m.meeting_status || m.status) !== "completed"
+          (m.meeting_status || m.status) !== "completed",
       );
 
       if (!filtered.length) {
@@ -1169,10 +1250,10 @@ const InvestorDetailDrawer: React.FC<Props> = ({
 
       const latest = filtered.reduce((acc, cur) => {
         const accTime = new Date(
-          acc.meeting_datetime || acc.created_at || 0
+          acc.meeting_datetime || acc.created_at || 0,
         ).getTime();
         const curTime = new Date(
-          cur.meeting_datetime || cur.created_at || 0
+          cur.meeting_datetime || cur.created_at || 0,
         ).getTime();
         return curTime > accTime ? cur : acc;
       });
@@ -1190,7 +1271,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
   /* ---------- helper: remove Interested rows for same investor+company ---------- */
   const removeInterestedRowsForCompany = async (
     investorIdStr: string,
-    companyIdStr: string
+    companyIdStr: string,
   ) => {
     try {
       const res = await getInvestorsInList("interested");
@@ -1226,12 +1307,12 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                   investor_id: investor?.id || investorIdStr,
                 },
               },
-            })
+            }),
           );
         } catch (err) {
           console.error(
             "Failed to remove interested row after meeting schedule",
-            err
+            err,
           );
         }
       }
@@ -1372,7 +1453,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                 listType: "meeting",
                 item: serverItem,
               },
-            })
+            }),
           );
 
           window.dispatchEvent(
@@ -1382,7 +1463,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                 listType: "interested",
                 item: { id: existing.id, investor_id: investor.id },
               },
-            })
+            }),
           );
 
           convertedViaUpdate = true;
@@ -1390,7 +1471,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       } catch (innerErr) {
         console.error(
           "Failed to convert interested row to meeting; will fallback to creating meeting row",
-          innerErr
+          innerErr,
         );
       }
 
@@ -1415,14 +1496,14 @@ const InvestorDetailDrawer: React.FC<Props> = ({
               listType: "meeting",
               item: serverItem,
             },
-          })
+          }),
         );
       }
 
       // 4️⃣ Ensure any remaining Interested rows for same investor+company are removed
       await removeInterestedRowsForCompany(
         investorId,
-        String(companyIdNormalized)
+        String(companyIdNormalized),
       );
 
       // 5️⃣ Refresh local data (panel stays open)
@@ -1435,7 +1516,6 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       // inline panel intentionally NOT closed on Schedule (preserve previous behavior)
     } catch (err) {
       console.error("handleScheduleFromMeetingButton error", err);
-
     } finally {
       setIsProcessing(false);
     }
@@ -1450,7 +1530,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       meeting_datetime?: string | null;
       notes?: string | null;
       company_id?: string | null;
-    }
+    },
   ) => {
     if (!investor) return;
     const investorId = String(investor.investor_id || investor.id || "");
@@ -1477,7 +1557,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       }
 
       const filtered = items.filter(
-        (m) => String(m.company_id || "") === String(companyIdNormalized)
+        (m) => String(m.company_id || "") === String(companyIdNormalized),
       );
 
       if (!filtered.length) {
@@ -1488,10 +1568,10 @@ const InvestorDetailDrawer: React.FC<Props> = ({
 
       const latest = filtered.reduce((acc, cur) => {
         const accTime = new Date(
-          acc.meeting_datetime || acc.created_at || 0
+          acc.meeting_datetime || acc.created_at || 0,
         ).getTime();
         const curTime = new Date(
-          cur.meeting_datetime || cur.created_at || 0
+          cur.meeting_datetime || cur.created_at || 0,
         ).getTime();
         return curTime > accTime ? cur : acc;
       });
@@ -1499,11 +1579,9 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       await updateMeeting(latest.id, { meeting_status: status });
       await fetchMeetings();
 
-
       window.dispatchEvent(new Event("investorMeetingCreated"));
     } catch (err) {
       console.error("update meeting status from Meeting button failed", err);
-
     } finally {
       setIsProcessing(false);
     }
@@ -1520,7 +1598,6 @@ const InvestorDetailDrawer: React.FC<Props> = ({
     if (!investor) return;
     setIsProcessing(true);
 
-
     const listType: "interested" | "followups" | "not_interested" =
       scheduleMode === "interested"
         ? "interested"
@@ -1529,7 +1606,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
           : "not_interested";
 
     const optimisticTempId = `tmp-${Date.now()}-${Math.floor(
-      Math.random() * 10000
+      Math.random() * 10000,
     )}`;
     const companyIdNormalized = normaliseCompanyId(payload.company_id) || null;
 
@@ -1578,7 +1655,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
     window.dispatchEvent(
       new CustomEvent("investorListChanged", {
         detail: { action: "added", listType, item: optimisticItem },
-      })
+      }),
     );
 
     try {
@@ -1649,8 +1726,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
           id: mr.id ?? mr.meeting_id ?? null,
           meet_link: mr.meet_link || mr.meetLink || null,
           meeting_datetime: mr.meeting_datetime || mr.scheduled_at || null,
-          meeting_type:
-            mr.meeting_type || payload.meeting_type || "virtual",
+          meeting_type: mr.meeting_type || payload.meeting_type || "virtual",
           notes: mr.notes || payload.notes || null,
           status: mr.meeting_status || mr.status || "scheduled",
           company_id: mr.company_id ?? companyIdNormalized ?? null,
@@ -1694,7 +1770,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
             tempId: optimisticTempId,
             serverItem,
           },
-        })
+        }),
       );
 
       await fetchMeetings();
@@ -1708,7 +1784,6 @@ const InvestorDetailDrawer: React.FC<Props> = ({
         window.dispatchEvent(new Event("investorFollowupCreated"));
       if (listType === "not_interested")
         window.dispatchEvent(new Event("investorInteractionCreated"));
-
     } catch (err) {
       console.error("handleSchedule error", err);
       window.dispatchEvent(
@@ -1719,9 +1794,8 @@ const InvestorDetailDrawer: React.FC<Props> = ({
             item: { id: optimisticTempId, investor_id: investor.id },
             error: err,
           },
-        })
+        }),
       );
-
     } finally {
       setIsProcessing(false);
     }
@@ -1739,7 +1813,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
         meetingObj?.google_create_status === "NO_REFRESH_TOKEN"
       ) {
         alert(
-          "Google account not connected. Please connect Google in Settings to auto-create Meet links."
+          "Google account not connected. Please connect Google in Settings to auto-create Meet links.",
         );
         return;
       }
@@ -1758,7 +1832,9 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       console.error("generate meet failed", err);
       const payload = err?.payload ?? err;
       if (payload && payload.google_create_status === "NO_REFRESH_TOKEN") {
-        alert("Google account not connected. Please connect Google in Settings.");
+        alert(
+          "Google account not connected. Please connect Google in Settings.",
+        );
       } else {
         alert("Failed to generate meeting link");
       }
@@ -1769,12 +1845,12 @@ const InvestorDetailDrawer: React.FC<Props> = ({
 
   const handleUpdateMeetingStatus = async (
     meetingId: string | number,
-    status: "scheduled" | "completed"
+    status: "scheduled" | "completed",
   ) => {
     if (!meetingId) return;
     const prev = meetings;
     const updated = prev.map((m) =>
-      m.id === meetingId ? { ...m, meeting_status: status, status } : m
+      m.id === meetingId ? { ...m, meeting_status: status, status } : m,
     );
     setMeetings(updated);
 
@@ -1787,8 +1863,8 @@ const InvestorDetailDrawer: React.FC<Props> = ({
           cur.map((m) =>
             m.id === updatedMeetingFromServer.id
               ? { ...m, ...updatedMeetingFromServer }
-              : m
-          )
+              : m,
+          ),
         );
       } else {
         await fetchMeetings();
@@ -1806,7 +1882,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
 
   const handleUpdateFollowupStatus = async (
     followupId: string | number,
-    status: "scheduled" | "completed"
+    status: "scheduled" | "completed",
   ) => {
     if (!followupId) return;
     try {
@@ -1998,9 +2074,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       const fromDate = activityFrom
         ? new Date(activityFrom + "T00:00:00")
         : null;
-      const toDate = activityTo
-        ? new Date(activityTo + "T23:59:59")
-        : null;
+      const toDate = activityTo ? new Date(activityTo + "T23:59:59") : null;
 
       filtered = rows.filter((r) => {
         if (!r.filterDate) return false;
@@ -2017,13 +2091,13 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       if (r.companyName) companySet.add(r.companyName);
     });
     activityCompanyOptions = Array.from(companySet).sort((a, b) =>
-      a.localeCompare(b)
+      a.localeCompare(b),
     );
 
     // company filter
     if (activityCompanyFilter !== "ALL") {
       filtered = filtered.filter(
-        (r) => (r.companyName || "") === activityCompanyFilter
+        (r) => (r.companyName || "") === activityCompanyFilter,
       );
     }
 
@@ -2032,10 +2106,8 @@ const InvestorDetailDrawer: React.FC<Props> = ({
       // companies where there is an Interested row
       const interestedCompanies = new Set(
         filtered
-          .filter(
-            (r) => r.activityType === "Interested" && r.companyName
-          )
-          .map((r) => r.companyName as string)
+          .filter((r) => r.activityType === "Interested" && r.companyName)
+          .map((r) => r.companyName as string),
       );
 
       filtered = filtered.filter((r) => {
@@ -2053,9 +2125,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
     } else if (activityTypeFilter === "FOLLOWUPS") {
       filtered = filtered.filter((r) => r.activityType === "Followup");
     } else if (activityTypeFilter === "NOT_INTERESTED") {
-      filtered = filtered.filter(
-        (r) => r.activityType === "Not Interested"
-      );
+      filtered = filtered.filter((r) => r.activityType === "Not Interested");
     }
 
     // sorting
@@ -2115,18 +2185,22 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                 className="w-12 h-12 rounded-full object-cover"
               />
               <div>
-                <h3 className="text-lg font-semibold">{investorName}</h3>
+                <div className="text-lg text-blue-600 font-semibold">
+                  {investor?.firm?.name || "—"}
+                </div>
+
                 <div className="text-sm text-gray-600">
                   {investor?.jobTitle ||
                     investor?.job_title ||
                     investor?.role ||
                     "—"}
                 </div>
-                <div className="text-sm text-blue-600">
-                  {investor?.firm?.name || "—"}
-                </div>
+                <h3 className="text-sm  font-semibold">{investorName}</h3>
+
                 <div className="text-xs text-gray-500 mt-1">
-                  {investor?.firm?.type ? `Category: ${investor.firm.type}` : ""}
+                  {investor?.firm?.type
+                    ? `Category: ${investor.firm.type}`
+                    : ""}
                 </div>
               </div>
             </div>
@@ -2141,6 +2215,12 @@ const InvestorDetailDrawer: React.FC<Props> = ({
           </div>
           <div className="p-6 space-y-6">
             {/* Investor meta */}
+            <div>
+              <h3 className="text-sm  font-normal">
+                <strong>Bio: </strong>
+                {investor?.bio}
+              </h3>
+            </div>
             <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
               <div>
                 <strong>Location:</strong> {investor?.location || "—"}
@@ -2154,15 +2234,25 @@ const InvestorDetailDrawer: React.FC<Props> = ({
               </div>
               <div>
                 <strong>Portfolio Fit:</strong>{" "}
-                {investor?.portfolioFitScore ?? investor?.portfolio_fit_score ?? "—"}
+                {investor?.portfolioFitScore ??
+                  investor?.portfolio_fit_score ??
+                  "—"}
               </div>
               <div>
                 <strong>Stages:</strong>{" "}
-                {(investor?.investmentStages || investor?.investment_stages || []).join(", ") || "—"}
+                {(
+                  investor?.investmentStages ||
+                  investor?.investment_stages ||
+                  []
+                ).join(", ") || "—"}
               </div>
               <div>
                 <strong>Sectors:</strong>{" "}
-                {(investor?.sectorPreferences || investor?.sector_preferences || []).join(", ") || "—"}
+                {(
+                  investor?.sectorPreferences ||
+                  investor?.sector_preferences ||
+                  []
+                ).join(", ") || "—"}
               </div>
               <div>
                 <strong>Check Size:</strong>{" "}
@@ -2210,7 +2300,10 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() =>
-                    setOpenSections((prev) => ({ ...prev, meetings: !prev.meetings }))
+                    setOpenSections((prev) => ({
+                      ...prev,
+                      meetings: !prev.meetings,
+                    }))
                   }
                   disabled={isProcessing}
                   className="px-4 py-2 rounded-full border border-blue-300 bg-blue-50 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-100"
@@ -2226,7 +2319,10 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                   <ScheduleModal
                     open={openSections.interested}
                     onClose={() => {
-                      setOpenSections((prev) => ({ ...prev, interested: false }));
+                      setOpenSections((prev) => ({
+                        ...prev,
+                        interested: false,
+                      }));
                       setScheduleContext("normal");
                     }}
                     onSchedule={async (p) => {
@@ -2252,7 +2348,10 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                   <ScheduleModal
                     open={openSections.followups}
                     onClose={() => {
-                      setOpenSections((prev) => ({ ...prev, followups: false }));
+                      setOpenSections((prev) => ({
+                        ...prev,
+                        followups: false,
+                      }));
                       setScheduleContext("normal");
                     }}
                     onSchedule={async (p) => {
@@ -2278,7 +2377,10 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                   <ScheduleModal
                     open={openSections.not_interested}
                     onClose={() => {
-                      setOpenSections((prev) => ({ ...prev, not_interested: false }));
+                      setOpenSections((prev) => ({
+                        ...prev,
+                        not_interested: false,
+                      }));
                       setScheduleContext("normal");
                     }}
                     onSchedule={async (p) => {
@@ -2303,7 +2405,9 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                 {openSections.meetings && (
                   <MeetingManageModal
                     open={openSections.meetings}
-                    onClose={() => setOpenSections((prev) => ({ ...prev, meetings: false }))}
+                    onClose={() =>
+                      setOpenSections((prev) => ({ ...prev, meetings: false }))
+                    }
                     onScheduleMeeting={handleScheduleFromMeetingButton}
                     onUpdateStatus={handleMeetingStatusFromMeetingButton}
                     parentFilterActive={parentCompanyFilterActive}
@@ -2342,9 +2446,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                   <span className="text-gray-600">Company</span>
                   <select
                     value={activityCompanyFilter}
-                    onChange={(e) =>
-                      setActivityCompanyFilter(e.target.value)
-                    }
+                    onChange={(e) => setActivityCompanyFilter(e.target.value)}
                     className="px-2 py-1 border rounded text-sm"
                   >
                     <option value="ALL">All Companies</option>
@@ -2364,10 +2466,10 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                     onChange={(e) =>
                       setActivityTypeFilter(
                         e.target.value as
-                        | "ALL"
-                        | "INTERESTED"
-                        | "FOLLOWUPS"
-                        | "NOT_INTERESTED"
+                          | "ALL"
+                          | "INTERESTED"
+                          | "FOLLOWUPS"
+                          | "NOT_INTERESTED",
                       )
                     }
                     className="px-2 py-1 border rounded text-sm"
@@ -2386,7 +2488,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                     value={activitySortKey}
                     onChange={(e) =>
                       setActivitySortKey(
-                        e.target.value as "date" | "company" | "activity"
+                        e.target.value as "date" | "company" | "activity",
                       )
                     }
                     className="px-2 py-1 border rounded text-sm"
@@ -2402,14 +2504,10 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                     className="px-2 py-1 border rounded text-sm"
                   >
                     <option value="desc">
-                      {activitySortKey === "date"
-                        ? "Newest → Oldest"
-                        : "Z → A"}
+                      {activitySortKey === "date" ? "Newest → Oldest" : "Z → A"}
                     </option>
                     <option value="asc">
-                      {activitySortKey === "date"
-                        ? "Oldest → Newest"
-                        : "A → Z"}
+                      {activitySortKey === "date" ? "Oldest → Newest" : "A → Z"}
                     </option>
                   </select>
                 </div>
@@ -2454,16 +2552,10 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                       <div className="truncate" title={investorName || ""}>
                         {investorName || "—"}
                       </div>
-                      <div
-                        className="truncate"
-                        title={act.companyName || ""}
-                      >
+                      <div className="truncate" title={act.companyName || ""}>
                         {act.companyName || "—"}
                       </div>
-                      <div
-                        className="truncate"
-                        title={act.meetingText || ""}
-                      >
+                      <div className="truncate" title={act.meetingText || ""}>
                         {act.meetingText || "—"}
                       </div>
                       <div
@@ -2472,10 +2564,7 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                       >
                         {act.interestedText || "—"}
                       </div>
-                      <div
-                        className="truncate"
-                        title={act.followupText || ""}
-                      >
+                      <div className="truncate" title={act.followupText || ""}>
                         {act.followupText || "—"}
                       </div>
                       <div
@@ -2534,15 +2623,30 @@ const InvestorDetailDrawer: React.FC<Props> = ({
                         Clear
                       </button>
                     </div>
-                  ) : parentCompanyFilterActive && parentCompanyOptions.length > 0 ? (
+                  ) : parentCompanyFilterActive &&
+                    parentCompanyOptions.length > 0 ? (
                     <div className="max-h-48 overflow-auto border rounded p-2">
                       {parentCompanyOptions.map((c: any) => {
-                        const cid = String(c.id ?? c.company_id ?? c.companyId ?? "");
-                        const selectedId = String(markDoneSelectedCompany?.id ?? markDoneSelectedCompany?.company_id ?? "");
+                        const cid = String(
+                          c.id ?? c.company_id ?? c.companyId ?? "",
+                        );
+                        const selectedId = String(
+                          markDoneSelectedCompany?.id ??
+                            markDoneSelectedCompany?.company_id ??
+                            "",
+                        );
                         const isSelected = selectedId === cid;
                         const statusText =
                           c.status ??
-                          (c.active !== undefined ? (c.active ? "Active" : "Inactive") : (c.isActive !== undefined ? (c.isActive ? "Active" : "Inactive") : c.state || ""));
+                          (c.active !== undefined
+                            ? c.active
+                              ? "Active"
+                              : "Inactive"
+                            : c.isActive !== undefined
+                              ? c.isActive
+                                ? "Active"
+                                : "Inactive"
+                              : c.state || "");
 
                         return (
                           <div
@@ -2561,10 +2665,16 @@ const InvestorDetailDrawer: React.FC<Props> = ({
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
-                                <div className="text-sm font-medium truncate">{c.name}</div>
-                                <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">{statusText}</div>
+                                <div className="text-sm font-medium truncate">
+                                  {c.name}
+                                </div>
+                                <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">
+                                  {statusText}
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500 truncate mt-1">{c.website ?? c.web ?? ""}</div>
+                              <div className="text-xs text-gray-500 truncate mt-1">
+                                {c.website ?? c.web ?? ""}
+                              </div>
                             </div>
                           </div>
                         );
@@ -2655,37 +2765,3 @@ const InvestorDetailDrawer: React.FC<Props> = ({
 };
 
 export default InvestorDetailDrawer;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

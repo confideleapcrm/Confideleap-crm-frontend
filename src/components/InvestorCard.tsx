@@ -62,7 +62,7 @@ const InvestorCard: React.FC<{
   investor: any;
   onOpenDetails?: (
     id: string,
-    mode?: "interested" | "followups" | "not_interested" | "meetings"
+    mode?: "interested" | "followups" | "not_interested" | "meetings",
   ) => void;
   contextListType?: CardListContext;
 }> = ({ investor, onOpenDetails, contextListType }) => {
@@ -72,7 +72,7 @@ const InvestorCard: React.FC<{
   const [showMeetActions, setShowMeetActions] = useState(false);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [meetingType, setMeetingType] = useState<"virtual" | "physical">(
-    "virtual"
+    "virtual",
   );
   const [meetingDateTime, setMeetingDateTime] = useState("");
   const meetingNotesRef = useRef<HTMLTextAreaElement | null>(null);
@@ -80,7 +80,7 @@ const InvestorCard: React.FC<{
   const [companyResultsLocal, setCompanyResultsLocal] = useState<any[]>([]);
   const [companySearchingLocal, setCompanySearchingLocal] = useState(false);
   const [selectedCompanyLocal, setSelectedCompanyLocal] = useState<any | null>(
-    null
+    null,
   );
   const [isMeetingActionLoading, setIsMeetingActionLoading] = useState(false);
 
@@ -88,12 +88,13 @@ const InvestorCard: React.FC<{
   const [markDoneModalOpen, setMarkDoneModalOpen] = useState(false);
   const [markDoneCompanyQuery, setMarkDoneCompanyQuery] = useState("");
   const [markDoneCompanyResults, setMarkDoneCompanyResults] = useState<any[]>(
-    []
+    [],
   );
   const [markDoneCompanySearching, setMarkDoneCompanySearching] =
     useState(false);
-  const [markDoneSelectedCompany, setMarkDoneSelectedCompany] =
-    useState<any | null>(null);
+  const [markDoneSelectedCompany, setMarkDoneSelectedCompany] = useState<
+    any | null
+  >(null);
 
   // debounced company search for schedule modal
   const doLocalCompanySearch = useMemo(
@@ -116,7 +117,7 @@ const InvestorCard: React.FC<{
           setCompanySearchingLocal(false);
         }
       }, 300),
-    []
+    [],
   );
 
   // debounced company search for Mark-done modal
@@ -140,7 +141,7 @@ const InvestorCard: React.FC<{
           setMarkDoneCompanySearching(false);
         }
       }, 300),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -173,15 +174,13 @@ const InvestorCard: React.FC<{
     investor?.lastContactStatus ||
     investor?.last_contact_status ||
     null;
-  const [contactStatusInternal, setContactStatusInternal] =
-    useState<string | null>(
-      initialStatus ? prettyStatus(initialStatus) : null
-    );
+  const [contactStatusInternal, setContactStatusInternal] = useState<
+    string | null
+  >(initialStatus ? prettyStatus(initialStatus) : null);
 
   const getStatusColor = (statusRaw: string | undefined | null) => {
     const status = (statusRaw || "").toString().toLowerCase();
-    if (status === "called")
-      return "bg-blue-100 text-blue-800 border-blue-200";
+    if (status === "called") return "bg-blue-100 text-blue-800 border-blue-200";
     if (status === "messaged")
       return "bg-indigo-100 text-indigo-800 border-indigo-200";
     if (status === "not_picked" || status === "not picked")
@@ -215,10 +214,10 @@ const InvestorCard: React.FC<{
       }
     })();
     const subject = encodeURIComponent(
-      `Introduction / Opportunity — InvestorID: ${decodedId}`
+      `Introduction / Opportunity — InvestorID: ${decodedId}`,
     );
     const body = encodeURIComponent(
-      `Hi,\n\nI am reaching out regarding Investor record with ID: ${decodedId}\n\n(Please add message here)\n\nRegards,`
+      `Hi,\n\nI am reaching out regarding Investor record with ID: ${decodedId}\n\n(Please add message here)\n\nRegards,`,
     );
     return `mailto:${email}?subject=${subject}&body=${body}`;
   };
@@ -255,13 +254,12 @@ const InvestorCard: React.FC<{
     : "Unknown";
 
   const portfolioFitScore =
-  typeof investor?.portfolioFit === "number"
-    ? investor.portfolioFit
-    : investor?.portfolioFit?.overallFitScore ??
-      investor?.snapshot?.portfolioFit?.overallFitScore ??
-      investor?.portfolio_fit_score ??
-      0;
-
+    typeof investor?.portfolioFit === "number"
+      ? investor.portfolioFit
+      : (investor?.portfolioFit?.overallFitScore ??
+        investor?.snapshot?.portfolioFit?.overallFitScore ??
+        investor?.portfolio_fit_score ??
+        0);
 
   const effectiveListType = (): string | null => {
     // Prefer explicit contextListType if present (and not generic "matching"/"all")
@@ -278,15 +276,14 @@ const InvestorCard: React.FC<{
       investor?.snapshot?.list_type ||
       investor?.__listSource ||
       (investor &&
-        (investor._listType ||
-          (investor._optimistic && investor.list_type))) ||
+        (investor._listType || (investor._optimistic && investor.list_type))) ||
       null
     );
   };
 
   // contact status recording
   const handleSetContactStatus = async (
-    status: "called" | "not_picked" | "not_reachable"
+    status: "called" | "not_picked" | "not_reachable",
   ) => {
     try {
       await recordInvestorContactStatus({ investor_id: investor.id, status });
@@ -294,7 +291,7 @@ const InvestorCard: React.FC<{
       window.dispatchEvent(
         new CustomEvent("investorContactStatusChanged", {
           detail: { investor_id: investor.id, status },
-        })
+        }),
       );
       // alert(`Status saved: ${prettyStatus(status)}`);
     } catch (err) {
@@ -381,7 +378,7 @@ const InvestorCard: React.FC<{
         (snap.followup_id ||
           snap.followup_datetime ||
           snap.followupDatetime ||
-          snap.followupDate)
+          snap.followupDate),
       );
 
     // ✅ Only show meeting / followup label + date/time when NOT in
@@ -404,9 +401,7 @@ const InvestorCard: React.FC<{
         <div className="px-6 pb-2">
           <div className="text-xs text-gray-500">{label}</div>
 
-          {dt && (
-            <div className="text-sm font-medium text-gray-800">{dt}</div>
-          )}
+          {dt && <div className="text-sm font-medium text-gray-800">{dt}</div>}
 
           {snap?.notes && (
             <div className="text-sm text-gray-600 mt-1 truncate">
@@ -536,9 +531,7 @@ const InvestorCard: React.FC<{
             email: baseSnap.email || "",
             phone: baseSnap.phone || "",
             portfolioFit:
-              baseSnap.portfolioFit ??
-              baseSnap.portfolio_fit_score ??
-              0,
+              baseSnap.portfolioFit ?? baseSnap.portfolio_fit_score ?? 0,
           };
 
           await addInvestorToList({
@@ -550,7 +543,7 @@ const InvestorCard: React.FC<{
         } catch (e) {
           console.error(
             "addInvestorToList with company_id failed (non-blocking)",
-            e
+            e,
           );
         }
       }
@@ -592,7 +585,7 @@ const InvestorCard: React.FC<{
       const filtered = items.filter(
         (m) =>
           String(m.company_id || "") === String(companyId) &&
-          (m.meeting_status || m.status) !== "completed"
+          (m.meeting_status || m.status) !== "completed",
       );
 
       if (!filtered.length) {
@@ -603,10 +596,10 @@ const InvestorCard: React.FC<{
 
       const latest = filtered.reduce((acc, cur) => {
         const accTime = new Date(
-          acc.meeting_datetime || acc.created_at || 0
+          acc.meeting_datetime || acc.created_at || 0,
         ).getTime();
         const curTime = new Date(
-          cur.meeting_datetime || cur.created_at || 0
+          cur.meeting_datetime || cur.created_at || 0,
         ).getTime();
         return curTime > accTime ? cur : acc;
       });
@@ -624,7 +617,7 @@ const InvestorCard: React.FC<{
 
   // ✅ helper: open Schedule Meeting modal from Followups → Interested
   const handleInterestedFromFollowups = (
-    e: React.MouseEvent<HTMLButtonElement>
+    e: React.MouseEvent<HTMLButtonElement>,
   ) => {
     e.stopPropagation();
 
@@ -807,8 +800,9 @@ const InvestorCard: React.FC<{
           onOpenDetails(String(investor.id || investor.investor_id))
         }
         role="button"
-        aria-label={`Open details for ${investor.name || investor.first_name || ""
-          }`}
+        aria-label={`Open details for ${
+          investor.name || investor.first_name || ""
+        }`}
       >
         <div className="p-6 flex-1 flex flex-col">
           <div className="flex items-start justify-between mb-4 min-h-[64px] relative z-20">
@@ -828,15 +822,15 @@ const InvestorCard: React.FC<{
               />
               <div className="ml-4 min-w-0">
                 <h3 className="text-lg font-semibold text-gray-900 truncate">
-                  {investor.name ||
-                    `${investor.first_name || ""} ${investor.last_name || ""
-                    }`}
+                  {investor.firm?.name}
                 </h3>
                 <p className="text-sm text-gray-600 truncate">
                   {investor.job_title || investor.role}
                 </p>
                 <p className="text-sm font-medium text-blue-600 truncate">
-                  {investor.firm?.name}
+                  {/* {investor.firm?.name} */}
+                  {investor.name ||
+                    `${investor.first_name || ""} ${investor.last_name || ""}`}
                 </p>
                 {firmType && (
                   <p className="text-xs text-gray-500 mt-1 truncate">
@@ -855,14 +849,14 @@ const InvestorCard: React.FC<{
                 contextListType === "meetings" ||
                 contextListType === "meeting"
               ) && (
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(
-                      (derivedStatusRaw || "").toString().toLowerCase()
-                    )} whitespace-nowrap`}
-                  >
-                    {derivedStatusDisplay}
-                  </span>
-                )}
+                <span
+                  className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(
+                    (derivedStatusRaw || "").toString().toLowerCase(),
+                  )} whitespace-nowrap`}
+                >
+                  {derivedStatusDisplay}
+                </span>
+              )}
               <div className="flex items-center">
                 <Star className="w-4 h-4 text-yellow-400 mr-1" />
                 <span
@@ -894,9 +888,7 @@ const InvestorCard: React.FC<{
             <div className="flex items-center truncate">
               <TrendingUp className="w-4 h-4 mr-2 flex-shrink-0" />
               <span className="truncate">
-                {investor.portfolioSize ||
-                  investor.portfolio_size ||
-                  "—"}
+                {investor.portfolioSize || investor.portfolio_size || "—"}
               </span>
             </div>
             <div className="flex items-center truncate">
@@ -916,7 +908,8 @@ const InvestorCard: React.FC<{
               Sector Focus
             </p>
             <div className="flex flex-wrap gap-1">
-              {(investor.sectors ||
+              {(
+                investor.sectors ||
                 investor.sector_preferences ||
                 investor.sectorPreferences ||
                 []
@@ -931,10 +924,10 @@ const InvestorCard: React.FC<{
               {((investor.sectors && investor.sectors.length === 0) ||
                 (investor.sector_preferences &&
                   investor.sector_preferences.length === 0)) && (
-                  <span className="text-xs text-gray-400">
-                    No sector specified
-                  </span>
-                )}
+                <span className="text-xs text-gray-400">
+                  No sector specified
+                </span>
+              )}
             </div>
 
             {buySell && (
@@ -950,10 +943,11 @@ const InvestorCard: React.FC<{
           <div className="flex items-center space-x-3 mb-4">
             <a
               href={telHref || "#"}
-              className={`flex-1 px-3 py-2 rounded-full text-sm font-medium flex items-center justify-center ${telHref
+              className={`flex-1 px-3 py-2 rounded-full text-sm font-medium flex items-center justify-center ${
+                telHref
                   ? "bg-blue-600 text-white hover:bg-blue-700"
                   : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                }`}
+              }`}
               onClick={(e) => {
                 if (!telHref) e.preventDefault();
                 e.stopPropagation();
@@ -965,10 +959,7 @@ const InvestorCard: React.FC<{
               Contact
             </a>
 
-            <div
-              className="relative"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 onClick={(ev) => {
@@ -1002,9 +993,7 @@ const InvestorCard: React.FC<{
                   </button>
                   <div className="border-t" />
                   <button
-                    onClick={() =>
-                      handleSetContactStatus("not_reachable")
-                    }
+                    onClick={() => handleSetContactStatus("not_reachable")}
                     className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
                   >
                     Not Reachable
@@ -1030,12 +1019,10 @@ const InvestorCard: React.FC<{
               onClick={(e) => {
                 e.stopPropagation();
                 const phone = investor.phone
-                  ? String(investor.phone)
-                    .replace(/\D/g, "")
-                    .replace(/^0+/, "")
+                  ? String(investor.phone).replace(/\D/g, "").replace(/^0+/, "")
                   : null;
                 const text = encodeURIComponent(
-                  `Hello ${investor.name || ""},`
+                  `Hello ${investor.name || ""},`,
                 );
                 const url = phone
                   ? `https://wa.me/${phone}?text=${text}`
@@ -1158,20 +1145,22 @@ const InvestorCard: React.FC<{
               <div className="flex gap-2">
                 <button
                   type="button"
-                  className={`px-3 py-1 rounded ${meetingType === "virtual"
+                  className={`px-3 py-1 rounded ${
+                    meetingType === "virtual"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-100"
-                    }`}
+                  }`}
                   onClick={() => setMeetingType("virtual")}
                 >
                   Virtual
                 </button>
                 <button
                   type="button"
-                  className={`px-3 py-1 rounded ${meetingType === "physical"
+                  className={`px-3 py-1 rounded ${
+                    meetingType === "physical"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-100"
-                    }`}
+                  }`}
                   onClick={() => setMeetingType("physical")}
                 >
                   Physical
@@ -1194,9 +1183,7 @@ const InvestorCard: React.FC<{
 
             {/* Notes */}
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">
-                Notes
-              </label>
+              <label className="block text-sm font-medium mb-2">Notes</label>
               <textarea
                 ref={meetingNotesRef}
                 rows={5}
@@ -1239,9 +1226,7 @@ const InvestorCard: React.FC<{
             className="relative z-10 bg-white rounded-lg shadow-lg w-[480px] max-w-[95%] p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold mb-4">
-              Mark Meeting Done
-            </h3>
+            <h3 className="text-lg font-semibold mb-4">Mark Meeting Done</h3>
 
             {/* Company selector (required) */}
             <div className="mb-4">
@@ -1267,9 +1252,7 @@ const InvestorCard: React.FC<{
                     type="text"
                     placeholder="Search company by name..."
                     value={markDoneCompanyQuery}
-                    onChange={(e) =>
-                      setMarkDoneCompanyQuery(e.target.value)
-                    }
+                    onChange={(e) => setMarkDoneCompanyQuery(e.target.value)}
                     className="w-full px-3 py-2 border rounded"
                   />
                   {markDoneCompanySearching && (
@@ -1344,5 +1327,3 @@ const InvestorCard: React.FC<{
 };
 
 export default InvestorCard;
-
-

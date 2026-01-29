@@ -27,3 +27,4 @@ export const getUserById = async (id: string) => {
   const res = await httpClient.get(`/api/users/${id}`);
   return res.data;
 }
+

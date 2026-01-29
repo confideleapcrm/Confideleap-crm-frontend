@@ -19,18 +19,29 @@ import {
   FileText,
   AlertCircle,
 } from "lucide-react";
+import AsyncSelect from "react-select/async";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   addInvestor,
   getInvestorById,
   updateInvestor,
 } from "../services/investorService";
+import { fetchFirmOptions } from "../services/firmService";
+import FirmEmployeesForm from "./FirmEmployeesForm";
 
 const AddInvestor: React.FC<{}> = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
   const isEditMode = Boolean(id);
   const [loading, setLoading] = useState(false);
+  const [firmNames, setFirmNames] = useState([
+    "Andreessen Horowitz",
+    "Sequoia Capital",
+    "Accel",
+  ]);
+  const [employees, setEmployees] = useState([]);
+  const [showAddFirm, setShowAddFirm] = useState(false);
+  const [newFirmName, setNewFirmName] = useState("");
 
   const [formData, setFormData] = useState({
     // Personal Information
@@ -44,11 +55,16 @@ const AddInvestor: React.FC<{}> = () => {
     avatarUrl: "",
 
     // Firm Information
+    firmId: "", // ✅ Add this
     firmName: "",
     firmType: "PMS - Portfolio Management System",
     firmWebsite: "",
     buySellSide: "",
     aum: "10-50 cr",
+
+    // Employee Information
+    // ✅ Employee mapping (JOIN TABLE)
+    employeeIds: [] as string[],
 
     // Location
     location: "",
@@ -126,6 +142,32 @@ const AddInvestor: React.FC<{}> = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const handleSaveFirm = () => {
+    const firm = newFirmName.trim();
+    if (!firm) return;
+
+    const exists = firmNames.some(
+      (f) => f.toLowerCase() === firm.toLowerCase(),
+    );
+
+    if (!exists) {
+      setFirmNames((prev) => [...prev, firm]);
+    }
+
+    setFormData((prev) => ({ ...prev, firmName: firm }));
+    setNewFirmName("");
+    setShowAddFirm(false);
+  };
+
+  // const firmNames = [
+  //   "Andreessen Horowitz",
+  //   "Sequoia Capital",
+  //   "Accel",
+  //   "Tiger Global",
+  //   "SoftBank",
+  //   "Lightspeed Venture Partners",
+  // ];
 
   const investmentStageOptions = [
     "Pre-Seed",
@@ -239,6 +281,20 @@ const AddInvestor: React.FC<{}> = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const firmOptions = firmNames.map((firm) => ({
+    value: firm,
+    label: firm,
+  }));
+
+  const loadFirmOptions = async (inputValue: string | undefined) => {
+    const data = await fetchFirmOptions(inputValue);
+
+    return data.firms.map((firm: { id: any; name: any }) => ({
+      value: firm.id,
+      label: firm.name,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -334,8 +390,8 @@ const AddInvestor: React.FC<{}> = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className=" bg-gray-100">
+      <div className="bg-white rounded-xl w-full mx-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center">
@@ -364,7 +420,7 @@ const AddInvestor: React.FC<{}> = () => {
         </div>
 
         {/* Form Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className="">
           {loading ? (
             <div className="flex justify-center items-center h-40">
               <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -373,34 +429,91 @@ const AddInvestor: React.FC<{}> = () => {
             <form onSubmit={handleSubmit} className="p-6 space-y-8">
               {/* Firm Information */}
               <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Building className="w-5 h-5 mr-2 text-blue-600" />
-                  Firm Information
-                </h3>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Building className="w-5 h-5 mr-2 text-blue-600" />
+                    Firm Information
+                  </h3>
 
+                  <button
+                    type="button"
+                    onClick={() => setShowAddFirm(true)}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    + Add Firm
+                  </button>
+                </div>
+
+                {/* Add Firm Form */}
+                {showAddFirm && (
+                  <div className="mb-6 p-4 border rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Firm Name
+                    </label>
+
+                    <input
+                      type="text"
+                      value={newFirmName}
+                      onChange={(e) => setNewFirmName(e.target.value)}
+                      placeholder="Enter firm name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        type="button"
+                        onClick={handleSaveFirm}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      >
+                        Save
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddFirm(false);
+                          setNewFirmName("");
+                        }}
+                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Main Form */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Firm Name *
                     </label>
-                    <input
-                      type="text"
-                      value={formData.firmName}
-                      onChange={(e) =>
+
+                    <AsyncSelect
+                      cacheOptions
+                      defaultOptions
+                      loadOptions={loadFirmOptions}
+                      placeholder="Search firm..."
+                      value={
+                        formData.firmId
+                          ? { value: formData.firmId, label: formData.firmName }
+                          : null
+                      }
+                      onChange={(selected) =>
                         setFormData((prev) => ({
                           ...prev,
-                          firmName: e.target.value,
+                          firmId: selected ? selected.value : "",
+                          firmName: selected ? selected.label : "",
                         }))
                       }
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.firmName ? "border-red-300" : "border-gray-300"
-                      }`}
-                      placeholder="e.g., Andreessen Horowitz"
+                      classNamePrefix="react-select"
                     />
-                    {errors.firmName && (
+
+                    {errors?.firmId && (
                       <p className="mt-1 text-sm text-red-600 flex items-center">
                         <AlertCircle className="w-4 h-4 mr-1" />
-                        {errors.firmName}
+                        {errors.firmId}
                       </p>
                     )}
                   </div>
@@ -498,195 +611,13 @@ const AddInvestor: React.FC<{}> = () => {
                   Personal Information
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.firstName}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          firstName: e.target.value,
-                        }))
-                      }
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.firstName ? "border-red-300" : "border-gray-300"
-                      }`}
-                      placeholder="Enter first name"
-                    />
-                    {errors.firstName && (
-                      <p className="mt-1 text-sm text-red-600 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        {errors.firstName}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          lastName: e.target.value,
-                        }))
-                      }
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.lastName ? "border-red-300" : "border-gray-300"
-                      }`}
-                      placeholder="Enter last name"
-                    />
-                    {errors.lastName && (
-                      <p className="mt-1 text-sm text-red-600 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        {errors.lastName}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            email: e.target.value,
-                          }))
-                        }
-                        className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                          errors.email ? "border-red-300" : "border-gray-300"
-                        }`}
-                        placeholder="investor@firm.com"
-                      />
-                    </div>
-                    {errors.email && (
-                      <p className="mt-1 text-sm text-red-600 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        {errors.email}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            phone: e.target.value,
-                          }))
-                        }
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="+1 (555) 123-4567"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Job Title *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.jobTitle}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          jobTitle: e.target.value,
-                        }))
-                      }
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.jobTitle ? "border-red-300" : "border-gray-300"
-                      }`}
-                      placeholder="e.g., Partner, Principal, Associate"
-                    />
-                    {errors.jobTitle && (
-                      <p className="mt-1 text-sm text-red-600 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        {errors.jobTitle}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Seniority Level
-                    </label>
-                    <select
-                      value={formData.seniorityLevel}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          seniorityLevel: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {seniorityLevels.map((level) => (
-                        <option key={level} value={level}>
-                          {level}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Location
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        type="text"
-                        value={formData.location}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            location: e.target.value,
-                          }))
-                        }
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="e.g., San Francisco, CA"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bio
-                    </label>
-                    <textarea
-                      value={formData.bio}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          bio: e.target.value,
-                        }))
-                      }
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Brief professional background and investment focus..."
-                    />
-                  </div>
+                <div>
+                  <FirmEmployeesForm
+                    employees={employees}
+                    setEmployees={setEmployees}
+                    firmId={formData.firmId}
+                    firmName={formData.firmName}
+                  />
                 </div>
               </div>
 
