@@ -26,7 +26,7 @@ import {
   getInvestorById,
   updateInvestor,
 } from "../services/investorService";
-import { fetchFirmOptions } from "../services/firmService";
+import { fetchFirmEmployees, fetchFirmOptions } from "../services/firmService";
 import FirmEmployeesForm from "./FirmEmployeesForm";
 
 const AddInvestor: React.FC<{}> = () => {
@@ -34,25 +34,44 @@ const AddInvestor: React.FC<{}> = () => {
   const { id } = useParams<{ id?: string }>();
   const isEditMode = Boolean(id);
   const [loading, setLoading] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null);
   const [firmNames, setFirmNames] = useState([
     "Andreessen Horowitz",
     "Sequoia Capital",
     "Accel",
   ]);
-  const [employees, setEmployees] = useState([]);
-  const [showAddFirm, setShowAddFirm] = useState(false);
-  const [newFirmName, setNewFirmName] = useState("");
-
-  const [formData, setFormData] = useState({
-    // Personal Information
+  const emptyEmployeeData = {
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     jobTitle: "",
-    seniorityLevel: "Associate",
-    bio: "",
-    avatarUrl: "",
+    seniorityLevel: "",
+    employeeStatus: "",
+    comment: "",
+  };
+
+  const [employees, setEmployees] = useState([]);
+  const [showAddFirm, setShowAddFirm] = useState(false);
+  const [newFirmName, setNewFirmName] = useState("");
+  const [employeeData, setEmployeeData] = useState(emptyEmployeeData);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [selectedFirm, setSelectedFirm] = useState<{
+    value: string;
+    label: string;
+  } | null>(null);
+  const [prevFirmId, setPrevFirmId] = useState("");
+
+  const [formData, setFormData] = useState({
+    // Personal Information
+    // firstName: "",
+    // lastName: "",
+    // email: "",
+    // phone: "",
+    // jobTitle: "",
+    // seniorityLevel: "Associate",
+    // bio: "",
+    // avatarUrl: "",
 
     // Firm Information
     firmId: "", // ✅ Add this
@@ -64,7 +83,7 @@ const AddInvestor: React.FC<{}> = () => {
 
     // Employee Information
     // ✅ Employee mapping (JOIN TABLE)
-    employeeIds: [] as string[],
+    // employeeIds: [] as string[],
 
     // Location
     location: "",
@@ -100,16 +119,30 @@ const AddInvestor: React.FC<{}> = () => {
   const [currentPortfolioCompany, setCurrentPortfolioCompany] = useState("");
   const [currentInvestment, setCurrentInvestment] = useState("");
 
+  const mapEmployee = (emp: any) => ({
+    id: emp.id,
+    firstName: emp.first_name,
+    lastName: emp.last_name,
+    email: emp.email,
+    phone: emp.phone || "",
+    jobTitle: emp.job_title,
+    seniorityLevel: emp.seniority_level,
+    employeeStatus: emp.employee_status,
+    comment: emp.comment,
+  });
+
   useEffect(() => {
     if (isEditMode && id) {
       setLoading(true);
+
       getInvestorById(id)
         .then((data) => {
-          setFormData({
-            ...formData,
+          // Populate form data
+          setFormData((prev) => ({
+            ...prev,
             ...data,
 
-            // ✅ FORCE ALL ARRAY FIELDS (CRITICAL FIX)
+            // ✅ Ensure arrays are proper arrays
             investmentStages: Array.isArray(data.investmentStages)
               ? data.investmentStages
               : [],
@@ -119,7 +152,6 @@ const AddInvestor: React.FC<{}> = () => {
             geographicPreferences: Array.isArray(data.geographicPreferences)
               ? data.geographicPreferences
               : [],
-
             education: Array.isArray(data.education) ? data.education : [],
             experience: Array.isArray(data.experience) ? data.experience : [],
             tags: Array.isArray(data.tags) ? data.tags : [],
@@ -130,10 +162,24 @@ const AddInvestor: React.FC<{}> = () => {
               ? data.notableInvestments
               : [],
 
+            firmId: data.firm?.id || "",
             firmName: data.firm?.name || "",
             firmType: data.firm?.type || "",
             firmWebsite: data.firm?.website || "",
-          });
+          }));
+
+          // Set selected firm for AsyncSelect
+          if (data.firm) {
+            setSelectedFirm({ value: data.firm.id, label: data.firm.name });
+            setPrevFirmId(data.firm.id);
+          }
+
+          // Set employees for this firm
+          if (data.firm?.id) {
+            fetchFirmEmployees(data.firm.id)
+              .then((emps) => setEmployees(emps.map(mapEmployee)))
+              .catch((err) => console.error("Error fetching employees:", err));
+          }
         })
         .catch((error) => {
           console.error("Error loading investor:", error);
@@ -142,6 +188,14 @@ const AddInvestor: React.FC<{}> = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    if (formData.firmId) {
+      fetchFirmEmployees(formData.firmId)
+        .then((emps) => setEmployees(emps.map(mapEmployee)))
+        .catch((err) => console.error(err));
+    }
+  }, [formData.firmId]);
 
   const handleSaveFirm = () => {
     const firm = newFirmName.trim();
@@ -260,14 +314,14 @@ const AddInvestor: React.FC<{}> = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.firstName.trim())
-      newErrors.firstName = "First name is required";
-    if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
-    if (!formData.email.trim()) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email))
-      newErrors.email = "Email is invalid";
-    if (!formData.firmName.trim()) newErrors.firmName = "Firm name is required";
-    if (!formData.jobTitle.trim()) newErrors.jobTitle = "Job title is required";
+    // if (!formData.firstName.trim())
+    //   newErrors.firstName = "First name is required";
+    // if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
+    // if (!formData.email.trim()) newErrors.email = "Email is required";
+    // else if (!/\S+@\S+\.\S+/.test(formData.email))
+    //   newErrors.email = "Email is invalid";
+    // if (!formData.firmName.trim()) newErrors.firmName = "Firm name is required";
+    // if (!formData.jobTitle.trim()) newErrors.jobTitle = "Job title is required";
 
     if (formData.minCheckSize && formData.maxCheckSize) {
       const min = parseFloat(formData.minCheckSize.toString());
@@ -297,8 +351,9 @@ const AddInvestor: React.FC<{}> = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("function triggered");
 
-    if (!validateForm()) return;
+    // if (!validateForm()) return;
 
     setIsSubmitting(true);
 
@@ -496,7 +551,7 @@ const AddInvestor: React.FC<{}> = () => {
                       loadOptions={loadFirmOptions}
                       placeholder="Search firm..."
                       value={
-                        formData.firmId
+                        formData.firmId && formData.firmName
                           ? { value: formData.firmId, label: formData.firmName }
                           : null
                       }
@@ -615,6 +670,10 @@ const AddInvestor: React.FC<{}> = () => {
                   <FirmEmployeesForm
                     employees={employees}
                     setEmployees={setEmployees}
+                    employeeData={employeeData}
+                    setEmployeeData={setEmployeeData}
+                    editingIndex={editingIndex}
+                    setEditingIndex={setEditingIndex}
                     firmId={formData.firmId}
                     firmName={formData.firmName}
                   />
@@ -1054,12 +1113,46 @@ const AddInvestor: React.FC<{}> = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                <div className="text-sm text-gray-500">* Required fields</div>
+                <div className="flex space-x-3">
+                  <Link
+                    to={"/investor-database"}
+                    type="button"
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </Link>
+                  <button
+                    type="submit"
+                    // onClick={handleSubmit}
+                    disabled={isSubmitting || loading}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>{isEditMode ? "Updating..." : "Saving..."}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>
+                          {isEditMode ? "Update Investor" : "Save Investor"}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </form>
           )}
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+        {/* <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
           <div className="text-sm text-gray-500">* Required fields</div>
           <div className="flex space-x-3">
             <Link
@@ -1070,7 +1163,8 @@ const AddInvestor: React.FC<{}> = () => {
               Cancel
             </Link>
             <button
-              onClick={handleSubmit}
+              type="submit"
+              // onClick={handleSubmit}
               disabled={isSubmitting || loading}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
             >
@@ -1089,7 +1183,7 @@ const AddInvestor: React.FC<{}> = () => {
               )}
             </button>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { User, AlertCircle, Trash2, Edit } from "lucide-react";
 import {
   createFirmEmployee,
+  deleteFirmEmployee,
   updateFirmEmployee,
 } from "../services/firmService";
+import Select from "react-select";
 
 const seniorityLevels = [
   "Associate",
@@ -54,23 +56,30 @@ function Input({ label, value, onChange, error }) {
 export default function FirmEmployeesForm({
   employees,
   setEmployees,
+  employeeData,
+  setEmployeeData,
+  editingIndex,
+  setEditingIndex,
   firmId,
   firmName,
 }) {
-  //   const [employees, setEmployees] = useState([]);
-  const [formData, setFormData] = useState(emptyEmployee);
   const [errors, setErrors] = useState({});
-  // Consolidate editing state into one variable (the index)
-  const [editingIndex, setEditingIndex] = useState(null);
 
+  // Consolidate editing state into one variable (the index)
   const validate = () => {
     const errs = {};
-    if (!formData.firstName) errs.firstName = "Required";
-    if (!formData.lastName) errs.lastName = "Required";
-    if (!formData.email) errs.email = "Required";
+    if (!employeeData.firstName) errs.firstName = "Required";
+    if (!employeeData.lastName) errs.lastName = "Required";
+    if (!employeeData.email) errs.email = "Required";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
+
+  const temperatureOptions = [
+    { value: "hot", label: "Hot" },
+    { value: "warm", label: "Warm" },
+    { value: "cold_unresponsive", label: "Cold / Unresponsive" },
+  ];
 
   // 2. Handle Add or Update
   const handleAddOrUpdate = async (e) => {
@@ -90,24 +99,24 @@ export default function FirmEmployeesForm({
       let result;
 
       if (isUpdating) {
-        result = await updateFirmEmployee(employeeId, formData, firmId);
+        result = await updateFirmEmployee(employeeId, employeeData, firmId);
       } else {
-        result = await createFirmEmployee(formData, firmId);
+        result = await createFirmEmployee(employeeData, firmId);
       }
 
       if (isUpdating) {
         setEmployees((prev) =>
           prev.map((emp, idx) =>
-            idx === editingIndex ? { ...formData, id: employeeId } : emp,
+            idx === editingIndex ? { ...employeeData, id: employeeId } : emp,
           ),
         );
         alert("Employee updated successfully!");
       } else {
-        setEmployees((prev) => [...prev, { ...formData, id: result.id }]);
+        setEmployees((prev) => [...prev, { ...employeeData, id: result.id }]);
         alert("Employee added successfully!");
       }
 
-      setFormData(emptyEmployee);
+      setEmployeeData(emptyEmployee);
       setEditingIndex(null);
       setErrors({});
     } catch (err) {
@@ -116,62 +125,86 @@ export default function FirmEmployeesForm({
     }
   };
 
-  const handleEdit = (emp) => {
-    setFormData(emp);
-    setEditingIndex(emp.id); // Set the actual database UUID
+  // const handleEdit = (index) => {
+  //   setEmployeeData({ ...employees[index] });
+  //   setEditingIndex(index);
+  // };
+
+  const handleEdit = (employee: any, index: number) => {
+    setEmployeeData({
+      ...employees[index],
+      employeeStatus:
+        employees[index].employeeStatus ||
+        employees[index].employee_status ||
+        "",
+    });
+    setEditingIndex(index);
   };
-  const handleDelete = (index) => {
-    setEmployees((prev) => prev.filter((_, idx) => idx !== index));
-    // If we delete the item we are currently editing, reset the form
-    if (editingIndex === index) {
-      setFormData(emptyEmployee);
-      setEditingIndex(null);
+
+  const handleDelete = async (employeeId) => {
+    try {
+      await deleteFirmEmployee(employeeId); // call API first
+
+      setEmployees((prev) => prev.filter((emp) => emp.id !== employeeId));
+
+      if (editingIndex !== null && employees[editingIndex].id === employeeId) {
+        setEditingIndex(null);
+        setEmployeeData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: "",
+          jobTitle: "",
+          seniorityLevel: "",
+        });
+      }
+    } catch (error) {
+      alert("Delete failed", error);
     }
   };
 
   useEffect(() => {
-    // Optional: clear employees when firm changes
     setEmployees([]);
   }, [firmId]);
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-8">
+    <div className="px-4 space-y-8">
       {/* Add / Edit Employee Form */}
-      <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+      <div className="bg-gray-50 rounded-xl px-3">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <User className="w-5 h-5 mr-2 text-blue-600" />
+          {/* <User className="w-5 h-5 mr-2 text-blue-600" /> */}
           {editingIndex !== null ? "Edit Employee" : "Add Employee"}
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="First Name *"
-            value={formData.firstName}
+            value={employeeData.firstName}
             error={errors.firstName}
-            onChange={(v) => setFormData({ ...formData, firstName: v })}
+            onChange={(v) => setEmployeeData({ ...employeeData, firstName: v })}
           />
           <Input
             label="Last Name *"
-            value={formData.lastName}
+            value={employeeData.lastName}
             error={errors.lastName}
-            onChange={(v) => setFormData({ ...formData, lastName: v })}
+            onChange={(v) => setEmployeeData({ ...employeeData, lastName: v })}
           />
           <Input
             label="Email Address *"
-            value={formData.email}
+            value={employeeData.email}
             error={errors.email}
-            onChange={(v) => setFormData({ ...formData, email: v })}
+            onChange={(v) => setEmployeeData({ ...employeeData, email: v })}
           />
           <Input
             label="Phone Number"
-            value={formData.phone}
-            onChange={(v) => setFormData({ ...formData, phone: v })}
+            value={employeeData.phone}
+            onChange={(v) => setEmployeeData({ ...employeeData, phone: v })}
           />
           <Input
             label="Job Title *"
-            value={formData.jobTitle}
+            value={employeeData.jobTitle}
             error={errors.jobTitle}
-            onChange={(v) => setFormData({ ...formData, jobTitle: v })}
+            onChange={(v) => setEmployeeData({ ...employeeData, jobTitle: v })}
           />
 
           <div>
@@ -179,9 +212,12 @@ export default function FirmEmployeesForm({
               Seniority Level
             </label>
             <select
-              value={formData.seniorityLevel}
+              value={employeeData.seniorityLevel}
               onChange={(e) =>
-                setFormData({ ...formData, seniorityLevel: e.target.value })
+                setEmployeeData({
+                  ...employeeData,
+                  seniorityLevel: e.target.value,
+                })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100"
             >
@@ -192,6 +228,43 @@ export default function FirmEmployeesForm({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <div>
+              <label>Lead Status</label>
+            </div>
+            <div className="mt-2">
+              <Select
+                options={temperatureOptions}
+                value={
+                  temperatureOptions.find(
+                    (opt) => opt.value === employeeData.employeeStatus,
+                  ) || null
+                }
+                onChange={(option) =>
+                  setEmployeeData((prev) => ({
+                    ...prev,
+                    employeeStatus: option ? option.value : "",
+                  }))
+                }
+              />
+
+              {/* {errors.employeeStatus && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.employeeStatus}
+                </p>
+              )} */}
+            </div>
+          </div>
+
+          <div>
+            <Input
+              label="Enter Comment..."
+              value={employeeData.comment}
+              error={errors.comment}
+              onChange={(v) => setEmployeeData({ ...employeeData, comment: v })}
+            />
           </div>
         </div>
 
@@ -209,7 +282,7 @@ export default function FirmEmployeesForm({
               type="button"
               onClick={() => {
                 setEditingIndex(null);
-                setFormData(emptyEmployee);
+                setEmployeeData(emptyEmployee);
               }}
               className="text-gray-600 px-4 py-2 hover:underline"
             >
@@ -233,17 +306,18 @@ export default function FirmEmployeesForm({
           >
             <div>
               <p className="font-semibold text-gray-800">
-                {emp.firstName} {emp.lastName}
+                {emp.first_name} {emp.last_name}
               </p>
               <p className="text-sm text-gray-500">
-                {emp.jobTitle} {emp.seniorityLevel && `• ${emp.seniorityLevel}`}{" "}
-                • {emp.email}
+                {emp.job_title}{" "}
+                {emp.seniority_level && `• ${emp.seniority_level}`} •{" "}
+                {emp.email}
               </p>
             </div>
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => handleEdit(index)}
+                onClick={() => handleEdit(emp, index)}
                 className="text-blue-600 hover:text-blue-800 p-1"
                 title="Edit"
               >
@@ -251,7 +325,7 @@ export default function FirmEmployeesForm({
               </button>
               <button
                 type="button"
-                onClick={() => handleDelete(index)}
+                onClick={() => handleDelete(emp.id)}
                 className="text-red-600 hover:text-red-800 p-1"
                 title="Delete"
               >

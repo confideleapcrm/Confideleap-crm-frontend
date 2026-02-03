@@ -36,6 +36,24 @@ export const updateFirmEmployee = async (
 };
 
 
+export const deleteFirmEmployee = async(employeeId)=>{
+  const res = await httpClient.delete(`/api/firm_employee/${employeeId}`);
+  return res.data;
+}
+
+export const fetchFirmEmployees = async (firmId: string) => {
+  if (!firmId) return []; // safety check
+
+  try {
+    const res = await httpClient.get("/api/firm_employee", {
+      params: { firmId },
+    });
+    return res.data.employees || [];
+  } catch (err: any) {
+    console.error("Error fetching firm employees:", err);
+    throw err;
+  }
+};
 
 // export const saveFirmEmployee = async ({
 //   formData,
