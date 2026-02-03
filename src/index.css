@@ -5,3 +5,16 @@
 
 
 
+.react-select__control {
+  border-radius: 0.5rem;
+  min-height: 42px;
+}
+
+.react-select__control--is-focused {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+}
+
+.react-select__menu {
+  z-index: 50;
+}

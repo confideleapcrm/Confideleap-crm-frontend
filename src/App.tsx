@@ -14,9 +14,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   // const sessionToken = localStorage.getItem("sessionToken");
 
-  const { isAuthenticated, isLoading } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   /* ---------------------------------------------
      SESSION VERIFY
@@ -64,26 +62,29 @@ function App() {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // 1. Try to get current user
         const meRes = await getMe();
-        dispatch(setAuth({ userInfo: meRes.user }));
+
+        dispatch(
+          setAuth({
+            userInfo: meRes.user,
+          }),
+        );
       } catch {
         try {
-          // 2. If access token expired → refresh via session
           const refreshRes = await verifySession();
 
           dispatch(
             setAuth({
               userInfo: refreshRes.user,
-            })
+            }),
           );
         } catch {
-          // 3. If refresh fails → logout
           dispatch(clearAuth());
           navigate("/login");
         }
       } finally {
-        setLoading(false);
+        // ✅ single source of truth
+        dispatch(setLoading(false));
       }
     };
 
@@ -102,7 +103,7 @@ function App() {
       });
 
       const backdrops = document.querySelectorAll(
-        ".modal-backdrop, .backdrop, .overlay"
+        ".modal-backdrop, .backdrop, .overlay",
       );
       backdrops.forEach((bd: any) => {
         bd.style.zIndex = "99990";

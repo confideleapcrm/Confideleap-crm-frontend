@@ -92,7 +92,7 @@ const InvestorDatabase = () => {
         setCurrentPage(1);
         setSearch(val);
       }, 500),
-    []
+    [],
   );
 
   // wire controlled input -> debounced token
@@ -131,13 +131,17 @@ const InvestorDatabase = () => {
 
   const handleSelectInvestor = (id: string) => {
     setSelectedInvestors((prev) =>
-      prev.includes(id) ? prev.filter((investorId) => investorId !== id) : [...prev, id]
+      prev.includes(id)
+        ? prev.filter((investorId) => investorId !== id)
+        : [...prev, id],
     );
   };
 
   const handleSelectAll = () => {
     setSelectedInvestors(
-      selectedInvestors.length === investors.length ? [] : investors.map((inv: any) => inv.id)
+      selectedInvestors.length === investors.length
+        ? []
+        : investors.map((inv: any) => inv.id),
     );
   };
 
@@ -170,8 +174,12 @@ const InvestorDatabase = () => {
       }
     })();
 
-    const subject = encodeURIComponent(`Introduction / Opportunity — InvestorID: ${decodedId}`);
-    const body = encodeURIComponent(`Hi,\n\nReferencing investor record ID: ${decodedId}\n\n(Write message here)\n\nRegards,`);
+    const subject = encodeURIComponent(
+      `Introduction / Opportunity — InvestorID: ${decodedId}`,
+    );
+    const body = encodeURIComponent(
+      `Hi,\n\nReferencing investor record ID: ${decodedId}\n\n(Write message here)\n\nRegards,`,
+    );
 
     return `mailto:${email}?subject=${subject}&body=${body}`;
   };
@@ -191,8 +199,12 @@ const InvestorDatabase = () => {
         <div className="px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Investor Database</h1>
-              <p className="text-sm text-gray-500 mt-1">Manage and organize your investor relationships</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Investor Database
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Manage and organize your investor relationships
+              </p>
             </div>
 
             <div className="flex items-center space-x-3">
@@ -206,7 +218,10 @@ const InvestorDatabase = () => {
                 <span>Export</span>
               </button>
 
-              <Link to={"/add-investor"} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center space-x-2">
+              <Link
+                to={"/add-investor"}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center space-x-2"
+              >
                 <Plus className="w-4 h-4" />
                 <span>Add Investor</span>
               </Link>
@@ -233,7 +248,14 @@ const InvestorDatabase = () => {
             </div>
 
             <div className="flex items-center space-x-3">
-              <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
                 <option value="name">Sort by Name</option>
                 <option value="firm">Sort by Firm</option>
                 <option value="fit">Sort by Portfolio Fit</option>
@@ -245,8 +267,18 @@ const InvestorDatabase = () => {
               </button>
 
               <div className="flex border border-gray-300 rounded-lg">
-                <button onClick={() => setViewMode("table")} className={`px-3 py-2 text-sm ${viewMode === "table" ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-50"}`}>Table</button>
-                <button onClick={() => setViewMode("grid")} className={`px-3 py-2 text-sm border-l border-gray-300 ${viewMode === "grid" ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-50"}`}>Grid</button>
+                <button
+                  onClick={() => setViewMode("table")}
+                  className={`px-3 py-2 text-sm ${viewMode === "table" ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-50"}`}
+                >
+                  Table
+                </button>
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`px-3 py-2 text-sm border-l border-gray-300 ${viewMode === "grid" ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-50"}`}
+                >
+                  Grid
+                </button>
               </div>
             </div>
           </div>
@@ -260,8 +292,12 @@ const InvestorDatabase = () => {
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Investors</p>
-                <p className="text-xl font-bold text-gray-900">{totalResults}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Investors
+                </p>
+                <p className="text-xl font-bold text-gray-900">
+                  {totalResults}
+                </p>
               </div>
             </div>
           </div>
@@ -272,8 +308,15 @@ const InvestorDatabase = () => {
                 <Target className="w-5 h-5 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">High Fit (90%+)</p>
-                <p className="text-xl font-bold text-gray-900">{investors.filter((inv: any) => inv.portfolioFit >= 90).length}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  High Fit (90%+)
+                </p>
+                <p className="text-xl font-bold text-gray-900">
+                  {
+                    investors.filter((inv: any) => inv.portfolioFit >= 90)
+                      .length
+                  }
+                </p>
               </div>
             </div>
           </div>
@@ -285,7 +328,14 @@ const InvestorDatabase = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Active</p>
-                <p className="text-xl font-bold text-gray-900">{investors.filter((inv: any) => inv.status === "hot" || inv.status === "warm").length}</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {
+                    investors.filter(
+                      (inv: any) =>
+                        inv.status === "hot" || inv.status === "warm",
+                    ).length
+                  }
+                </p>
               </div>
             </div>
           </div>
@@ -296,8 +346,16 @@ const InvestorDatabase = () => {
                 <Building className="w-5 h-5 text-purple-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Unique Firms</p>
-                <p className="text-xl font-bold text-gray-900">{new Set(investors.map((inv: any) => JSON.stringify(inv.firm))).size}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Unique Firms
+                </p>
+                <p className="text-xl font-bold text-gray-900">
+                  {
+                    new Set(
+                      investors.map((inv: any) => JSON.stringify(inv.firm)),
+                    ).size
+                  }
+                </p>
               </div>
             </div>
           </div>
@@ -307,11 +365,20 @@ const InvestorDatabase = () => {
         {selectedInvestors.length > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-blue-800">{selectedInvestors.length} investor{selectedInvestors.length > 1 ? "s" : ""} selected</span>
+              <span className="text-sm font-medium text-blue-800">
+                {selectedInvestors.length} investor
+                {selectedInvestors.length > 1 ? "s" : ""} selected
+              </span>
               <div className="flex space-x-2">
-                <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">Add to Campaign</button>
-                <button className="px-3 py-1 border border-blue-300 text-blue-700 rounded text-sm hover:bg-blue-100">Export Selected</button>
-                <button className="px-3 py-1 border border-blue-300 text-blue-700 rounded text-sm hover:bg-blue-100">Bulk Edit</button>
+                <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                  Add to Campaign
+                </button>
+                <button className="px-3 py-1 border border-blue-300 text-blue-700 rounded text-sm hover:bg-blue-100">
+                  Export Selected
+                </button>
+                <button className="px-3 py-1 border border-blue-300 text-blue-700 rounded text-sm hover:bg-blue-100">
+                  Bulk Edit
+                </button>
               </div>
             </div>
           </div>
@@ -329,56 +396,147 @@ const InvestorDatabase = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left">
-                      <input type="checkbox" checked={selectedInvestors.length === investors.length && investors.length > 0} onChange={handleSelectAll} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                      <input
+                        type="checkbox"
+                        checked={
+                          selectedInvestors.length === investors.length &&
+                          investors.length > 0
+                        }
+                        onChange={handleSelectAll}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investor</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Firm & Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Focus Areas</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Portfolio Fit</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Investor
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Firm & Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Focus Areas
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Portfolio Fit
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {investors.map((investor: any) => (
                     <tr key={investor.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
-                        <input type="checkbox" checked={selectedInvestors.includes(investor.id)} onChange={() => handleSelectInvestor(investor.id)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                        <input
+                          type="checkbox"
+                          checked={selectedInvestors.includes(investor.id)}
+                          onChange={() => handleSelectInvestor(investor.id)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <img src={investor.avatarUrl || "https://ui-avatars.com/api/?name=Investor&background=0D8ABC&color=fff"} alt={investor.name} className="w-10 h-10 rounded-full object-cover" />
+                          <img
+                            src={
+                              investor.avatarUrl ||
+                              "https://ui-avatars.com/api/?name=Investor&background=0D8ABC&color=fff"
+                            }
+                            alt={investor.name}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{investor.name}</div>
-                            <div className="text-sm text-gray-500">{investor.email}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {investor.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {investor.email}
+                            </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{investor.firm?.name}</div>
-                        <div className="text-sm text-gray-500">{investor.role}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center text-sm text-gray-900"><MapPin className="w-4 h-4 mr-1 text-gray-400" />{investor.location}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {investor.sectors && investor.sectors.slice(0, 2).map((sector: any) => <span key={sector} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">{sector}</span>)}
-                          {investor.sectors && investor.sectors.length > 2 && <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">+{investor.sectors.length - 2}</span>}
+                        <div className="text-sm font-medium text-gray-900">
+                          {investor.firm?.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {investor.role}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center"><Star className="w-4 h-4 text-yellow-400 mr-1" /><span className={`text-sm font-semibold ${getFitColor(investor.portfolioFit)}`}>{investor.portfolioFit}%</span></div>
+                        <div className="flex items-center text-sm text-gray-900">
+                          <MapPin className="w-4 h-4 mr-1 text-gray-400" />
+                          {investor.location}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(investor.status)}`}>{investor.status.charAt(0).toUpperCase() + investor.status.slice(1)}</span>
+                        <div className="flex flex-wrap gap-1">
+                          {investor.sectors &&
+                            investor.sectors.slice(0, 2).map((sector: any) => (
+                              <span
+                                key={sector}
+                                className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                              >
+                                {sector}
+                              </span>
+                            ))}
+                          {investor.sectors && investor.sectors.length > 2 && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                              +{investor.sectors.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <Star className="w-4 h-4 text-yellow-400 mr-1" />
+                          <span
+                            className={`text-sm font-semibold ${getFitColor(investor.portfolioFit)}`}
+                          >
+                            {investor.portfolioFit}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(investor.status)}`}
+                        >
+                          {investor.status.charAt(0).toUpperCase() +
+                            investor.status.slice(1)}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
-                          <Link to={`/investor-detail/${investor.id}`} className="p-1 text-gray-400 hover:text-blue-600"><Eye className="w-4 h-4" /></Link>
-                          <Link to={`/edit-investor/${investor.id}`} className="p-1 text-gray-400 hover:text-blue-600"><Edit className="w-4 h-4" /></Link>
-                          <a href={investor.email ? buildMailTo(investor.email, investor.id) : "#"} className="p-1 text-gray-400 hover:text-blue-600" onClick={(e) => { if (!investor.email) e.preventDefault(); }}><Mail className="w-4 h-4" /></a>
+                          <Link
+                            to={`/investor-detail/${investor.id}`}
+                            className="p-1 text-gray-400 hover:text-blue-600"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                          <Link
+                            to={`/edit-investor/${investor.id}`}
+                            className="p-1 text-gray-400 hover:text-blue-600"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Link>
+                          <a
+                            href={
+                              investor.email
+                                ? buildMailTo(investor.email, investor.id)
+                                : "#"
+                            }
+                            className="p-1 text-gray-400 hover:text-blue-600"
+                            onClick={(e) => {
+                              if (!investor.email) e.preventDefault();
+                            }}
+                          >
+                            <Mail className="w-4 h-4" />
+                          </a>
                         </div>
                       </td>
                     </tr>
@@ -391,40 +549,121 @@ const InvestorDatabase = () => {
           /* Grid View */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {investors.map((investor: any) => (
-              <div key={investor.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+              <div
+                key={investor.id}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200"
+              >
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center">
-                      <input type="checkbox" checked={selectedInvestors.includes(investor.id)} onChange={() => handleSelectInvestor(investor.id)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3" />
-                      <img src={investor.avatarUrl || "https://ui-avatars.com/api/?name=Investor&background=0D8ABC&color=fff"} alt={investor.name} className="w-12 h-12 rounded-full object-cover" />
+                      <input
+                        type="checkbox"
+                        checked={selectedInvestors.includes(investor.id)}
+                        onChange={() => handleSelectInvestor(investor.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
+                      />
+                      <img
+                        src={
+                          investor.avatarUrl ||
+                          "https://ui-avatars.com/api/?name=Investor&background=0D8ABC&color=fff"
+                        }
+                        alt={investor.name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
                     </div>
                     <div className="flex items-center space-x-1">
-                      <button className="p-1 text-gray-400 hover:text-blue-600"><Eye className="w-4 h-4" /></button>
-                      <button className="p-1 text-gray-400 hover:text-blue-600"><Edit className="w-4 h-4" /></button>
-                      <button className="p-1 text-gray-400 hover:text-gray-600"><MoreVertical className="w-4 h-4" /></button>
+                      <button className="p-1 text-gray-400 hover:text-blue-600">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button className="p-1 text-gray-400 hover:text-blue-600">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button className="p-1 text-gray-400 hover:text-gray-600">
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 
                   <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">{investor.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {investor.name}
+                    </h3>
                     <p className="text-sm text-gray-600">{investor.role}</p>
-                    <p className="text-sm font-medium text-blue-600">{investor.firm?.name}</p>
+                    <p className="text-sm font-medium text-blue-600">
+                      {investor.firm?.name}
+                    </p>
                   </div>
 
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-600"><MapPin className="w-4 h-4 mr-2" />{investor.location}</div>
-                    <div className="flex items-center text-sm text-gray-600"><DollarSign className="w-4 h-4 mr-2" />{investor.averageInvestment}</div>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      {investor.location}
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      {investor.averageInvestment}
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center"><Star className="w-4 h-4 text-yellow-400 mr-1" /><span className={`text-sm font-semibold ${getFitColor(investor.portfolioFit)}`}>{investor.portfolioFit}% fit</span></div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(investor.status)}`}>{investor.status.charAt(0).toUpperCase() + investor.status.slice(1)}</span>
+                    <div className="flex items-center">
+                      <Star className="w-4 h-4 text-yellow-400 mr-1" />
+                      <span
+                        className={`text-sm font-semibold ${getFitColor(investor.portfolioFit)}`}
+                      >
+                        {investor.portfolioFit}% fit
+                      </span>
+                    </div>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(investor.status)}`}
+                    >
+                      {investor.status.charAt(0).toUpperCase() +
+                        investor.status.slice(1)}
+                    </span>
                   </div>
 
                   <div className="flex space-x-2">
-                    <a href={investor.phone ? `tel:${investor.phone}` : "#"} className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center ${investor.phone ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`} onClick={(e) => { if (!investor.phone) e.preventDefault(); }} title={investor.phone ? "Call investor" : "Phone not available"}>Contact</a>
-                    <a href={investor.email ? buildMailTo(investor.email, investor.id) : "#"} className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50" onClick={(e) => { if (!investor.email) e.preventDefault(); }} title={investor.email ? "Email investor" : "Email not available"}><Mail className="w-4 h-4" /></a>
-                    <a href={investor.firm?.website || "#"} target="_blank" rel="noopener noreferrer" className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50" onClick={(e) => { if (!investor.firm?.website) e.preventDefault(); }}><ExternalLink className="w-4 h-4" /></a>
+                    <a
+                      href={investor.phone ? `tel:${investor.phone}` : "#"}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center ${investor.phone ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+                      onClick={(e) => {
+                        if (!investor.phone) e.preventDefault();
+                      }}
+                      title={
+                        investor.phone ? "Call investor" : "Phone not available"
+                      }
+                    >
+                      Contact
+                    </a>
+                    <a
+                      href={
+                        investor.email
+                          ? buildMailTo(investor.email, investor.id)
+                          : "#"
+                      }
+                      className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+                      onClick={(e) => {
+                        if (!investor.email) e.preventDefault();
+                      }}
+                      title={
+                        investor.email
+                          ? "Email investor"
+                          : "Email not available"
+                      }
+                    >
+                      <Mail className="w-4 h-4" />
+                    </a>
+                    <a
+                      href={investor.firm?.website || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+                      onClick={(e) => {
+                        if (!investor.firm?.website) e.preventDefault();
+                      }}
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
                   </div>
                 </div>
               </div>
@@ -436,10 +675,24 @@ const InvestorDatabase = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-4 mt-6">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing <span className="font-medium">{(currentPage - 1) * limit + 1}</span> to <span className="font-medium">{Math.min(currentPage * limit, totalResults)}</span> of <span className="font-medium">{totalResults}</span> results
+              Showing{" "}
+              <span className="font-medium">
+                {(currentPage - 1) * limit + 1}
+              </span>{" "}
+              to{" "}
+              <span className="font-medium">
+                {Math.min(currentPage * limit, totalResults)}
+              </span>{" "}
+              of <span className="font-medium">{totalResults}</span> results
             </div>
             <div className="flex items-center space-x-2">
-              <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50">Previous</button>
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
               {(() => {
                 const pages = [];
                 const maxVisible = 5;
@@ -447,17 +700,58 @@ const InvestorDatabase = () => {
                 const end = Math.min(totalPages - 1, currentPage + 2);
 
                 if (totalPages > 0) {
-                  pages.push(<button key={1} onClick={() => setCurrentPage(1)} className={`px-3 py-2 rounded-lg text-sm ${currentPage === 1 ? "bg-blue-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}>1</button>);
-                  if (start > 2) pages.push(<span key="start-ellipsis" className="px-2">...</span>);
+                  pages.push(
+                    <button
+                      key={1}
+                      onClick={() => setCurrentPage(1)}
+                      className={`px-3 py-2 rounded-lg text-sm ${currentPage === 1 ? "bg-blue-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+                    >
+                      1
+                    </button>,
+                  );
+                  if (start > 2)
+                    pages.push(
+                      <span key="start-ellipsis" className="px-2">
+                        ...
+                      </span>,
+                    );
                   for (let i = start; i <= end; i++) {
-                    pages.push(<button key={i} onClick={() => setCurrentPage(i)} className={`px-3 py-2 rounded-lg text-sm ${currentPage === i ? "bg-blue-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}>{i}</button>);
+                    pages.push(
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i)}
+                        className={`px-3 py-2 rounded-lg text-sm ${currentPage === i ? "bg-blue-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+                      >
+                        {i}
+                      </button>,
+                    );
                   }
-                  if (end < totalPages - 1) pages.push(<span key="end-ellipsis" className="px-2">...</span>);
-                  if (totalPages > 1) pages.push(<button key={totalPages} onClick={() => setCurrentPage(totalPages)} className={`px-3 py-2 rounded-lg text-sm ${currentPage === totalPages ? "bg-blue-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}>{totalPages}</button>);
+                  if (end < totalPages - 1)
+                    pages.push(
+                      <span key="end-ellipsis" className="px-2">
+                        ...
+                      </span>,
+                    );
+                  if (totalPages > 1)
+                    pages.push(
+                      <button
+                        key={totalPages}
+                        onClick={() => setCurrentPage(totalPages)}
+                        className={`px-3 py-2 rounded-lg text-sm ${currentPage === totalPages ? "bg-blue-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+                      >
+                        {totalPages}
+                      </button>,
+                    );
                 }
                 return pages;
               })()}
-              <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50">Next</button>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           </div>
         </div>
@@ -467,4 +761,3 @@ const InvestorDatabase = () => {
 };
 
 export default InvestorDatabase;
-
